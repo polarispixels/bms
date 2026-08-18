@@ -1037,6 +1037,11 @@ button:disabled {
     flex-direction: row;
     gap: 0.6rem;
     padding: 0.5rem 0.75rem;
+    /* `.side-col` going `display: contents` drops its own box — and the
+     * `--paper-raised` background it used to give the whole right column —
+     * so the meters strip needs it set directly to keep the same paper
+     * tone it always had. */
+    background: var(--paper-raised);
   }
 
   .meter {
@@ -1101,11 +1106,17 @@ button:disabled {
 
 /* --- touch targets --------------------------------------------------------
  * Every interactive control in the game is a <button>, so one rule covers
- * verbs, targets, hint actions and modal buttons alike. */
+ * verbs, targets, hint actions and modal buttons alike — `min-height` alone
+ * isn't enough, though: the borderless, `padding: 0` text links (Leave the
+ * meeting, ← Back, Hint, Dismiss) render at their text's natural width,
+ * which for "Hint" at 0.78rem is well under 44px. `min-width` plus a little
+ * horizontal padding fixes those without touching their look at desktop
+ * (padding is 0 there, so the link still reads as plain underlined text). */
 
 @media (max-width: 720px), (max-height: 540px) {
   button {
     min-height: 44px;
+    min-width: 44px;
   }
 
   .link-btn,
@@ -1114,6 +1125,8 @@ button:disabled {
   .sub-back {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.6rem;
   }
 
   .verb-row,
