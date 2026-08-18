@@ -119,6 +119,7 @@ describe('meters', () => {
       memberMood: {},
       outOfOrderCount: 0,
       itemsCompleted: 0,
+      room: { firedBeats: [], veteranItems: [], veteranBaseline: null, drifting: null, timedOutRequests: [] },
     }
 
     it('applies positive delta to control meter', () => {

@@ -55,6 +55,17 @@ const FALLBACK_LINES: Record<string, string> = {
   VOICE_VOTE: 'Ayes and noes come back across the table: {ayes} to {noes}, with {abstains} silent.',
   ANNOUNCE_RESULT: 'The chair announces the vote: {ayes} in favor, {noes} opposed, {abstains} abstaining. The motion is {result}.',
 
+  // The room speaking up (D6/D7)
+  SEEK_RECOGNITION: '{memberName} catches the chair\'s eye and waits to be called on.',
+  RAISE_POINT_OF_ORDER: '{memberName} raises a point of order.',
+  RAISE_INQUIRY: '{memberName} has a question about procedure.',
+  INTERRUPT: '{memberName} stops waiting to be called on and talks over the room.',
+  SPEECH_CONTINUES: '{memberName} is still going, and the point is somewhere ahead.',
+  WITHDRAW_REQUEST: '{memberName} lowers their hand and lets it go.',
+  PROMPT_STATE_MOTION: '{memberName} points out that the chair has not put the question to the board yet.',
+  PROMPT_BUSINESS: '{memberName} asks, politely, what the board is doing about {itemTitle}.',
+  ROOM_RESTLESS: 'The interruption is still hanging in the air, and the room knows it.',
+
   // Chair conduct
   CONFUSION: '{memberName} looks around, unsure what just happened.',
   RULE_WELL_TAKEN: 'The chair rules the point well taken.',
@@ -64,6 +75,7 @@ const FALLBACK_LINES: Record<string, string> = {
   NOTHING_TO_ANSWER: 'The chair answers a question nobody is asking.',
   GAVEL_ORDER: 'The gavel comes down and the room quiets.',
   GAVEL_QUIET: 'The gavel comes down. Nobody was talking.',
+  GAVEL_CUT_OFF: 'The gavel comes down across {memberName}\'s sentence.',
   RECESS: 'The chair declares a recess of {minutes} minutes.',
   ADJOURN: 'The chair declares the meeting adjourned.',
   MEETING_ADJOURNED: 'Chairs scrape back from the table.',

@@ -3,6 +3,7 @@
 // Deliberately dependency-light (types only) so later tasks (reducer, room,
 // report) can reuse it without pulling in reducer/room logic.
 
+import { initialRoom } from '../room'
 import type { AgendaItem, MeetingState, Member } from '../types'
 
 function defaultAgenda(): AgendaItem[] {
@@ -57,6 +58,7 @@ export function makeState(partial?: Partial<MeetingState>): MeetingState {
     memberMood,
     outOfOrderCount: 0,
     itemsCompleted: 0,
+    room: initialRoom(),
   }
 
   return { ...defaults, ...partial }

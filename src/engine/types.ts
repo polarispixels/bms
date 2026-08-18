@@ -122,6 +122,24 @@ export type Checkpoint = {
   state: MeetingState // deep snapshot with checkpoints: [] inside
 }
 
+/**
+ * Bookkeeping the room simulation needs across turns (D6/D7). It lives on
+ * MeetingState rather than in module scope so the engine stays pure and every
+ * checkpoint snapshot rewinds the room along with the meeting.
+ */
+export type RoomSim = {
+  /** Beat ids already fired; every beat fires at most once (D7). */
+  firedBeats: string[]
+  /** Agenda item ids the veteran has already reacted to. */
+  veteranItems: string[]
+  /** Other members' total recognitions when the veteran filed; null when idle. */
+  veteranBaseline: number | null
+  /** A drifting speech still running into its second turn (D6). */
+  drifting: { member: MemberId; startedTurn: number } | null
+  /** Requests that already charged IGNORED_REQUEST_TIMEOUT (fires once each). */
+  timedOutRequests: RequestId[]
+}
+
 export type VoteTally = {
   method: 'VOICE' | 'ROLL_CALL'
   ayes: number
@@ -165,6 +183,8 @@ export type MeetingState = {
   memberMood: Record<MemberId, { impatience: number; timesRecognized: number }>
   outOfOrderCount: number // chair actions taken while OUT_OF_ORDER
   itemsCompleted: number
+  /** Room-simulation bookkeeping (D6/D7); see RoomSim. */
+  room: RoomSim
 }
 
 export type Phase = MeetingState['phase']

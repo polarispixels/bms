@@ -18,14 +18,15 @@
 // starts at turn 1, and after N actions turn === N + 1.
 
 import type { Scenario } from '../content/schema'
+import { captureCheckpoint } from './checkpoints'
+import { beginDraft, emit } from './draft'
 import { legalActions } from './legality'
 import { applyDelta } from './meters'
 import { popMotion, pushMotion, topMotion } from './motions'
 import { pickIndex } from './rng'
-import { roomRespond } from './room'
+import { initialRoom, roomRespond } from './room'
 import type {
   Action,
-  Checkpoint,
   LegalityStatus,
   MeetingEvent,
   MeetingState,
@@ -36,39 +37,9 @@ import type {
   VoteTally,
 } from './types'
 
-const CHECKPOINT_LOG_LIMIT = 20
-
 // ---------------------------------------------------------------------------
 // Draft helpers (the only place that mutates)
 // ---------------------------------------------------------------------------
-
-/**
- * Deep-copies the state so the reducer can work imperatively without ever
- * touching the caller's object. `checkpoints` is carried by reference — its
- * entries are frozen-by-convention snapshots and we only ever replace the
- * array (never push into it), so nothing shared is mutated.
- */
-function beginDraft(state: MeetingState): MeetingState {
-  const { checkpoints, ...rest } = state
-  return { ...structuredClone(rest), checkpoints }
-}
-
-/**
- * Appends an event with a monotonic, deterministic id. The counter lives on
- * state (never `log.length`) because checkpoint snapshots truncate the log to
- * its last 20 entries — a length-derived id would collide with live ids the
- * moment a checkpoint was restored.
- */
-function emit(
-  draft: MeetingState,
-  type: MeetingEvent['type'],
-  actor: MeetingEvent['actor'],
-  intent: string,
-  payload: Record<string, unknown> = {},
-): void {
-  draft.eventSeq += 1
-  draft.log.push({ id: `e${draft.eventSeq}`, type, actor, intent, payload })
-}
 
 function presentMembers(draft: MeetingState): Member[] {
   return draft.members.filter((m) => m.present)
@@ -93,33 +64,6 @@ function dropRequest(draft: MeetingState, id: string): void {
 
 function currentItemTitle(draft: MeetingState): string {
   return draft.agenda[draft.currentItem]?.title ?? 'the current item'
-}
-
-// ---------------------------------------------------------------------------
-// Checkpoints (D10 capture; restore lands in Task 6's checkpoints.ts)
-// ---------------------------------------------------------------------------
-
-/**
- * Snapshots the draft as a restore point.
- *
- * Consistent semantics for every boundary: **a checkpoint holds a state that is
- * poised to take a turn.** `checkpoint.turn` and `snapshot.state.turn` are the
- * turn number that will be played when the checkpoint is restored, never a turn
- * whose action is already baked into the snapshot. Callers must therefore
- * capture either before applying the turn's action (the pre-vote boundary) or
- * after `turn += 1` (the item boundary).
- */
-function captureCheckpoint(draft: MeetingState, label: string): void {
-  const { checkpoints: _ignored, ...rest } = draft
-  const snapshot: MeetingState = { ...structuredClone(rest), checkpoints: [] }
-  snapshot.log = snapshot.log.slice(-CHECKPOINT_LOG_LIMIT)
-  const entry: Checkpoint = {
-    id: `cp${draft.checkpoints.length + 1}`,
-    label,
-    turn: draft.turn,
-    state: snapshot,
-  }
-  draft.checkpoints = [...draft.checkpoints, entry]
 }
 
 // ---------------------------------------------------------------------------
@@ -162,6 +106,7 @@ export function initMeeting(scenario: Scenario, seed: number): MeetingState {
     memberMood,
     outOfOrderCount: 0,
     itemsCompleted: 0,
+    room: initialRoom(),
   }
 
   const presentCount = members.filter((m) => m.present).length
@@ -565,9 +510,24 @@ function applyGavel(draft: MeetingState): MeetingState {
   const interrupts = draft.pendingRequests.filter((r) => r.kind === 'INTERRUPT')
   if (interrupts.length > 0) {
     draft.pendingRequests = draft.pendingRequests.filter((r) => r.kind !== 'INTERRUPT')
+    // The gavel that quiets an outburst also ends any speech it lands on; the
+    // room reads it as order restored, so the rambler costs nothing extra.
+    draft.room = { ...draft.room, drifting: null }
     emit(draft, 'STATE_CHANGE', 'CHAIR', 'GAVEL_ORDER', { cleared: interrupts.length })
     return applyDelta(draft, 'GAVEL_RESTORES_ORDER')
   }
+
+  // Gaveling a member who is merely long-winded is not restoring order, it is
+  // cutting someone off in front of the board (D6 CUT_OFF_RAMBLER).
+  const drifting = draft.room.drifting
+  if (drifting) {
+    draft.room = { ...draft.room, drifting: null }
+    emit(draft, 'STATE_CHANGE', 'CHAIR', 'GAVEL_CUT_OFF', {
+      memberName: memberName(draft, drifting.member),
+    })
+    return applyDelta(draft, 'CUT_OFF_RAMBLER')
+  }
+
   emit(draft, 'NARRATION', 'CHAIR', 'GAVEL_QUIET', {})
   return applyDelta(draft, 'GAVEL_QUIET_ROOM')
 }
@@ -672,7 +632,10 @@ export function reduce(state: MeetingState, action: Action, scenario: Scenario):
 
   // (5a) D10: the pre-vote snapshot is taken before the vote is applied.
   if (action.verb === 'CALL_VOTE' && status !== 'OUT_OF_ORDER') {
-    captureCheckpoint(draft, `Before the vote on ${topMotion(draft.motionStack)?.text ?? currentItemTitle(draft)}`)
+    draft = captureCheckpoint(
+      draft,
+      `Before the vote on ${topMotion(draft.motionStack)?.text ?? currentItemTitle(draft)}`,
+    )
   }
 
   // (1) chair action, or its consequence. WAIT is the one verb that never
@@ -703,7 +666,7 @@ export function reduce(state: MeetingState, action: Action, scenario: Scenario):
   // turn counter advances, so the snapshot is poised to take the next turn —
   // the same meaning the pre-vote checkpoint has (see captureCheckpoint).
   if (openedItem !== null && draft.phase !== 'COLLAPSED') {
-    captureCheckpoint(draft, `Item ${openedItem + 1}: ${draft.agenda[openedItem]?.title ?? ''} opened`)
+    draft = captureCheckpoint(draft, `Item ${openedItem + 1}: ${draft.agenda[openedItem]?.title ?? ''} opened`)
   }
 
   return draft
