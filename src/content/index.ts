@@ -7,10 +7,12 @@
 // failure is the cheapest one. The game never ships content it cannot run.
 
 import hoaFence01 from './scenarios/hoa-fence-01.json'
+import hoaFence02 from './scenarios/hoa-fence-02.json'
+import hoaFence03 from './scenarios/hoa-fence-03.json'
 import { validateScenario } from './schema'
 import type { Scenario } from './schema'
 
-const RAW_SCENARIOS: unknown[] = [hoaFence01]
+const RAW_SCENARIOS: unknown[] = [hoaFence01, hoaFence02, hoaFence03]
 
 /** Every playable scenario, validated against D8. */
 export const scenarios: Scenario[] = RAW_SCENARIOS.map((raw) => validateScenario(raw))

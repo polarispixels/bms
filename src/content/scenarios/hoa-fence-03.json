@@ -1,0 +1,603 @@
+{
+  "id": "hoa-fence-03",
+  "title": "The Special Assessment",
+  "body": "Willow Creek Homeowners Association",
+  "version": "1.0.0",
+  "seats": 5,
+  "quorum": 3,
+  "present": ["ruth", "bev", "hal", "dee", "carl"],
+  "parTurns": 18,
+
+  "agenda": [
+    {
+      "id": "item-minutes",
+      "title": "Approval of the October minutes",
+      "motions": [
+        {
+          "id": "mo-minutes",
+          "kind": "MAIN",
+          "text": "that the minutes of the October meeting be approved as distributed",
+          "germane": true
+        }
+      ]
+    },
+    {
+      "id": "item-assessment",
+      "title": "Special assessment for the west retaining wall",
+      "veteranBait": true,
+      "motions": [
+        {
+          "id": "mo-assessment",
+          "kind": "MAIN",
+          "text": "that the board levy a special assessment of eight hundred fifty dollars per unit, due within sixty days, to fund emergency repair of the retaining wall along the west property line",
+          "germane": true
+        }
+      ]
+    }
+  ],
+
+  "members": [
+    {
+      "id": "ruth",
+      "name": "Ruth Alvarado-Behn",
+      "archetype": "NONE",
+      "objective": "Treasurer. This one isn't a fight she has to referee, just a number she has to make everyone accept. The wall is failing, the engineer's letter says so in writing, and there is no version of this where the board doesn't pay for it. Votes for the assessment and, for once, doesn't have much to add.",
+      "stances": { "mo-minutes": "AYE", "mo-assessment": "AYE" },
+      "lines": {
+        "SEEK_RECOGNITION": [
+          "Ruth Alvarado-Behn raises a finger about an inch off the table and waits.",
+          "Ruth Alvarado-Behn closes her folder, which is how she asks for the floor.",
+          "Ruth Alvarado-Behn looks at the chair, then at the clock, then at the chair again."
+        ],
+        "SECOND": [
+          "Ruth Alvarado-Behn: \"Second.\"",
+          "Ruth Alvarado-Behn: \"Second. I wish it were a smaller number, but second.\"",
+          "Ruth Alvarado-Behn: \"I'll second it. The reserve fund doesn't cover a wall.\""
+        ],
+        "COMMENT": [
+          "Ruth Alvarado-Behn: \"I only want to note the engineer's letter is dated last Tuesday, not last year. This isn't old news dressed up.\"",
+          "Ruth Alvarado-Behn: \"For the record, sixty days is what the engineer asked for, not what the board picked.\"",
+          "Ruth Alvarado-Behn: \"No position beyond the obvious. I'd like this to not be my problem alone by Friday.\""
+        ],
+        "CONFUSION": [
+          "Ruth Alvarado-Behn stops writing and looks up, pen still capped.",
+          "Ruth Alvarado-Behn: \"I'm sorry, what are we doing?\"",
+          "Ruth Alvarado-Behn turns her copy of the agenda over, as if the answer is on the back."
+        ],
+        "DEMUR": [
+          "Ruth Alvarado-Behn: \"No, I hadn't asked for anything.\"",
+          "Ruth Alvarado-Behn shakes her head. \"That was the fan.\""
+        ],
+        "WITHDRAW_REQUEST": [
+          "Ruth Alvarado-Behn lets it go and writes something in the margin instead.",
+          "Ruth Alvarado-Behn: \"Never mind. It'll keep.\""
+        ],
+        "INTERRUPT": [
+          "Ruth Alvarado-Behn, over the top of it: \"Chair, the engineer's letter is very clear on the timeline.\"",
+          "Ruth Alvarado-Behn does not wait: \"Sixty days isn't the board being harsh. It's the wall.\""
+        ]
+      }
+    },
+    {
+      "id": "bev",
+      "name": "Beverly Nunn",
+      "archetype": "RULES_ENTHUSIAST",
+      "objective": "Keeps the governing documents in a binder with color tabs. An assessment this size needs a signed engineer's report and thirty days' notice to the ownership, and if both boxes are checked she has no argument left, which she finds mildly disappointing. Votes for it once she has confirmed both boxes are, in fact, checked.",
+      "stances": { "mo-minutes": "ABSTAIN", "mo-assessment": "AYE" },
+      "lines": {
+        "SEEK_RECOGNITION": [
+          "Beverly Nunn holds up the laminated pages and waits to be seen.",
+          "Beverly Nunn: \"Chair. When you're ready for me.\"",
+          "Beverly Nunn raises her hand fully, at the elbow, the way you are supposed to."
+        ],
+        "SECOND": [
+          "Beverly Nunn: \"Second. And I'd note that a second is not an endorsement.\"",
+          "Beverly Nunn: \"I'll second it so it's properly before us.\"",
+          "Beverly Nunn: \"Second, for the sake of getting it on the record correctly.\""
+        ],
+        "DEBATE_FOR": [
+          "Beverly Nunn: \"I checked. The engineer's report is signed and dated, and the notice went out thirty-one days ago. I have no procedural objection, which I want noted, because it doesn't happen every month.\"",
+          "Beverly Nunn: \"I don't love a number this size any more than anyone else at this table, but the bylaws require us to maintain common elements, and a retaining wall is about as common as an element gets.\"",
+          "Beverly Nunn: \"For once the paperwork is exactly right. I'm in favor, and slightly disappointed I don't get to say otherwise.\""
+        ],
+        "RAISE_POINT_OF_ORDER": [
+          "Beverly Nunn: \"Point of order.\" She says it the way other people say bless you.",
+          "Beverly Nunn: \"Point of order, Chair.\" The laminated pages are already open.",
+          "Beverly Nunn: \"Point of order.\" She sounds sorry about it. She is not."
+        ],
+        "RAISE_INQUIRY": [
+          "Beverly Nunn: \"A question of procedure, Chair, before we go further.\"",
+          "Beverly Nunn: \"Point of information, if I may.\"",
+          "Beverly Nunn: \"I'd like to be sure of the notice period before anybody votes.\""
+        ],
+        "MINUTES_NITPICK": [
+          "Beverly Nunn: \"The October minutes list the treasurer's report as 'approved.' It was received, not approved. Those are different and I'd like the difference on the record.\"",
+          "Beverly Nunn: \"Page one says the meeting started at seven. It started at 7:04. I was watching the door.\"",
+          "Beverly Nunn: \"Small thing: my comment on the fence variance was recorded under Harold's name. I'd like that fixed before it becomes a habit.\""
+        ],
+        "COMMENT": [
+          "Beverly Nunn: \"For the record, I asked for the engineer's report in writing back in August, before this was urgent.\"",
+          "Beverly Nunn: \"I'll reserve my remarks until the motion is properly before us.\"",
+          "Beverly Nunn: \"I have a comment, and it is a short one, which will surprise people.\""
+        ],
+        "MOVE": [
+          "Beverly Nunn: \"Then I move {motionText}, and I'd like it read back.\"",
+          "Beverly Nunn: \"I move {motionText}. Word for word, please.\""
+        ],
+        "CONFUSION": [
+          "Beverly Nunn's pen stops. She turns to the index she made herself.",
+          "Beverly Nunn: \"I'm not sure that's a thing you can do.\"",
+          "Beverly Nunn looks at the laminated pages, then at the chair, and says nothing, which is worse."
+        ],
+        "DEMUR": [
+          "Beverly Nunn: \"I didn't seek the floor. I'd have said so.\"",
+          "Beverly Nunn: \"Not me, Chair. Not yet.\""
+        ],
+        "WITHDRAW_REQUEST": [
+          "Beverly Nunn lowers her hand and writes the time down next to it.",
+          "Beverly Nunn: \"It's moot now. It wasn't when I raised it.\""
+        ],
+        "INTERRUPT": [
+          "Beverly Nunn, cutting across: \"The notice period is thirty days. This clears it.\"",
+          "Beverly Nunn does not wait for the chair. \"I already checked. It's fine.\""
+        ]
+      }
+    },
+    {
+      "id": "hal",
+      "name": "Harold Pyke",
+      "archetype": "VETERAN",
+      "objective": "Nine years on this board, and he predicted this exact wall in this exact meeting three years ago, out loud, on the record, and would like everyone to remember that before they thank the engineer for discovering it. Votes for the assessment, because he has been waiting to be right about something this expensive for a while.",
+      "stances": { "mo-minutes": "AYE", "mo-assessment": "AYE" },
+      "lines": {
+        "SEEK_RECOGNITION": [
+          "Harold Pyke has had his hand up since before the item was read.",
+          "Harold Pyke leans back and lifts two fingers, patient as weather.",
+          "Harold Pyke: \"Chair, when there's a moment. I've been waiting three years for this one.\""
+        ],
+        "COMMENT": [
+          "Harold Pyke: \"I said in this room, in twenty twenty-one, that the drainage behind that wall was going to cost somebody money eventually. I was told I was being dramatic. I was being early.\"",
+          "Harold Pyke: \"Nobody wants to hear 'I told you so' from a man in a folding chair, and I understand that, and I'm going to say it anyway, once, and then I'm done.\"",
+          "Harold Pyke: \"Eight hundred fifty dollars is a lot less than what it would have cost if we'd waited until the wall actually came down. I checked.\"",
+          "Harold Pyke: \"This is the good kind of vindicated. The bad kind is when the wall's already in the Kowalczyks' yard."
+        ],
+        "RAISE_POINT_OF_ORDER": [
+          "Harold Pyke: \"Point of order. And it's a small one, for once.\"",
+          "Harold Pyke sits forward. \"Point of order, Chair. Won't take long.\"",
+          "Harold Pyke: \"Point of order. I'll try to be brief. I know that's not my strength.\""
+        ],
+        "DEBATE_FOR": [
+          "Harold Pyke: \"For. Obviously for. I've been for this since before there was a motion to be for.\"",
+          "Harold Pyke: \"Eight hundred fifty now beats whatever the number is after the wall's in someone's pool.\"",
+          "Harold Pyke: \"I don't enjoy asking people for money. I'd enjoy a lawsuit even less.\""
+        ],
+        "SECOND": [
+          "Harold Pyke: \"Second, gladly, and I'd like to speak to it when we get there.\"",
+          "Harold Pyke: \"I'll second. Finally, a motion I don't have a complaint about.\"",
+          "Harold Pyke: \"Second. This is the meeting I've been waiting for since 2021.\""
+        ],
+        "CONFUSION": [
+          "Harold Pyke: \"Did we skip something? We usually do this a different way.\"",
+          "Harold Pyke looks at the empty chair at the end of the table, where the answer used to sit.",
+          "Harold Pyke: \"Hang on. Hang on now. What just happened?\""
+        ],
+        "WITHDRAW_REQUEST": [
+          "Harold Pyke puts his hand down. \"It doesn't matter. It never does.\"",
+          "Harold Pyke lowers his hand. \"I'll tell you after.\""
+        ],
+        "MOVE": [
+          "Harold Pyke: \"All right. I move {motionText}. Somebody write down that I called it.\"",
+          "Harold Pyke: \"I move {motionText}. Three years late, by my count, but I move it.\""
+        ],
+        "DEMUR": [
+          "Harold Pyke: \"No, I'm fine. I said my piece already, at length.\"",
+          "Harold Pyke waves it off. \"Somebody else go.\""
+        ],
+        "RAISE_INQUIRY": [
+          "Harold Pyke: \"Question. Does the sixty days start tonight or from the letter?\"",
+          "Harold Pyke: \"Procedural question, Chair, and I'd like a straight answer.\""
+        ],
+        "INTERRUPT": [
+          "Harold Pyke, talking over the end of the sentence: \"I said this in 2021. Ask anybody who was here.\"",
+          "Harold Pyke doesn't wait. \"The drainage. It was always the drainage.\""
+        ],
+        "INTERRUPT_LEGITIMIZED": [
+          "Harold Pyke, given the floor he had already taken: \"Well. Since I'm up.\"",
+          "Harold Pyke nods as if he had been called on all along."
+        ]
+      }
+    },
+    {
+      "id": "dee",
+      "name": "Dee Marchetti",
+      "archetype": "INTERRUPTER",
+      "objective": "Her yard backs onto the retaining wall, close enough that she can see the crack from her kitchen window, and she would like it fixed before it is her problem instead of the board's. Warm, generous, and constitutionally unable to hold a thought until she is called on. Votes for the assessment without hesitating.",
+      "stances": { "mo-minutes": "AYE", "mo-assessment": "AYE" },
+      "lines": {
+        "INTERRUPT": [
+          "Dee Marchetti: \"Sorry, sorry, can I just say one thing, because I'll lose it.\"",
+          "Dee Marchetti: \"No, but that's my point, though. That's my whole point.\"",
+          "Dee Marchetti starts talking somewhere in the middle of her own sentence and everyone turns.",
+          "Dee Marchetti: \"Can I just, Chair, sorry, Chair, sorry.\" She is already three words into it."
+        ],
+        "SECOND": [
+          "Dee Marchetti: \"Second! Sorry. Second.\"",
+          "Dee Marchetti: \"Second, second, that's a second.\"",
+          "Dee Marchetti: \"I'll second it. Is that what I do? I second it.\""
+        ],
+        "MOVE": [
+          "Dee Marchetti: \"I move it. I move {motionText}. I've been wanting to move something all year.\"",
+          "Dee Marchetti: \"Okay, I move {motionText}, someone second me before I keep talking.\"",
+          "Dee Marchetti: \"I'll move it! I move {motionText}. Can I see the crack from my yard, is that relevant, I move it anyway.\""
+        ],
+        "COMMENT": [
+          "Dee Marchetti: \"I can see it from my kitchen window. It's gotten wider since spring, I'm not being dramatic, I have a picture.\"",
+          "Dee Marchetti: \"Eight hundred fifty dollars is a lot but so is my yard being at the bottom of it.\"",
+          "Dee Marchetti: \"I don't want to relitigate the pool gate but this feels adjacent to the pool gate.\""
+        ],
+        "SEEK_RECOGNITION": [
+          "Dee Marchetti's hand is up and moving.",
+          "Dee Marchetti: \"Me. Chair. Me.\"",
+          "Dee Marchetti has been holding her breath for a turn and a half."
+        ],
+        "RAISE_INQUIRY": [
+          "Dee Marchetti: \"Quick question — is this on top of the regular dues or instead of them, because that changes my whole month.\"",
+          "Dee Marchetti: \"Sorry — do we pay this once or is it spread out, because I want to plan for it right.\""
+        ],
+        "INTERRUPT_LEGITIMIZED": [
+          "Dee Marchetti: \"Oh! Thank you. Okay. So.\" She continues from exactly where she was.",
+          "Dee Marchetti, granted the floor mid-sentence, does not restart the sentence."
+        ],
+        "CONFUSION": [
+          "Dee Marchetti: \"Are we voting? Is this the vote?\"",
+          "Dee Marchetti looks at Ruth. Ruth doesn't look back this time either.",
+          "Dee Marchetti: \"Okay, I've lost the thread, I'll be honest with you.\""
+        ],
+        "DEMUR": [
+          "Dee Marchetti: \"Oh, no, I already said mine. Out loud. Earlier.\"",
+          "Dee Marchetti: \"I'm good! I'm good.\""
+        ],
+        "WITHDRAW_REQUEST": [
+          "Dee Marchetti: \"Forget it, it's gone, I've lost it.\"",
+          "Dee Marchetti puts her hand down and mouths it to Carl instead."
+        ]
+      }
+    },
+    {
+      "id": "carl",
+      "name": "Carl Ostrowski",
+      "archetype": "DRIFTING_COMMENTER",
+      "objective": "Newest member, and the only one on the board who has to actually find eight hundred fifty dollars in a checking account that doesn't have it lying around. Wants to say so. Doesn't manage to say it briefly. Votes no, quietly, after taking much longer than anyone expected to get there.",
+      "stances": { "mo-minutes": "AYE", "mo-assessment": "NO" },
+      "lines": {
+        "COMMENT": [
+          "Carl Ostrowski: \"So — I want to say I'm not against the wall, obviously, nobody's against a wall staying up, that's not — I just, okay, so I moved in April, and I don't have a lot of, like, slack, financially, this month specifically, and I know that's not really the board's problem, or it is, I don't know whose problem that is, actually, is that my problem —\"",
+          "Carl Ostrowski: \"I looked at the engineer's letter, I did read it, all of it, and I believe it, I'm not saying it's wrong, I'm saying eight fifty due in sixty days is — that's a specific number that has to come from a specific place, and I've been trying to figure out where, out loud apparently, sorry —\"",
+          "Carl Ostrowski: \"Can I just — is there a version where it's spread over more months, because I keep almost asking that and then talking about something else instead, which, is happening right now, I hear it happening —\""
+        ],
+        "SPEECH_CONTINUES": [
+          "Carl Ostrowski, still going: \"— and I don't want to be the guy who votes no on a wall, I really don't, I just needed to say the money part out loud to someone who wasn't my landlord —\"",
+          "Carl Ostrowski hasn't stopped. \"— which, I realize I have said three different versions of the same worry now, and I'm going to land the plane, I promise, I'm landing it —\"",
+          "Carl Ostrowski, running past where a sentence should have ended: \"— so, no, is where I am. Sorry. That took a while to get to.\""
+        ],
+        "SEEK_RECOGNITION": [
+          "Carl Ostrowski raises his hand about halfway and looks unsure about it.",
+          "Carl Ostrowski: \"Chair? Sorry — Chair?\"",
+          "Carl Ostrowski puts his phone face down, which is how he starts."
+        ],
+        "MOVE": [
+          "Carl Ostrowski reads it off his phone: \"I move {motionText}.\"",
+          "Carl Ostrowski: \"Okay. I move {motionText}. That's the wording from the packet.\""
+        ],
+        "SECOND": [
+          "Carl Ostrowski: \"Second.\"",
+          "Carl Ostrowski: \"Second — is that right? Second.\"",
+          "Carl Ostrowski, half a beat late: \"Oh — second.\""
+        ],
+        "CONFUSION": [
+          "Carl Ostrowski scrolls up in the packet, then down again.",
+          "Carl Ostrowski: \"Is that — should I be writing this down?\"",
+          "Carl Ostrowski looks at Beverly. Beverly's eyebrows have already answered."
+        ],
+        "RAISE_POINT_OF_ORDER": [
+          "Carl Ostrowski: \"Point of order? I think that's the one I want.\"",
+          "Carl Ostrowski: \"Chair, point of order.\" He glances at Beverly to see whether he's used it right."
+        ],
+        "RAISE_INQUIRY": [
+          "Carl Ostrowski: \"Can I ask how this works before I get it wrong?\"",
+          "Carl Ostrowski: \"Procedural question, and I'm the new guy, so.\""
+        ],
+        "DEMUR": [
+          "Carl Ostrowski: \"Me? No — I wasn't. Sorry.\"",
+          "Carl Ostrowski shakes his head and picks the phone back up."
+        ],
+        "WITHDRAW_REQUEST": [
+          "Carl Ostrowski puts his hand down and pretends he was stretching.",
+          "Carl Ostrowski: \"It's fine. It wasn't important.\""
+        ],
+        "INTERRUPT": [
+          "Carl Ostrowski, over the top of Harold: \"Wait, sorry, but the sixty days —\"",
+          "Carl Ostrowski doesn't wait, and immediately looks like he wishes he had."
+        ]
+      }
+    }
+  ],
+
+  "beats": [
+    {
+      "id": "i1-move-minutes",
+      "when": { "itemIndex": 0, "phase": "ITEM_OPEN", "afterEventIntent": "OPEN_ITEM" },
+      "effect": {
+        "kind": "REQUEST",
+        "request": {
+          "member": "bev",
+          "kind": "RECOGNITION",
+          "purpose": "MOVE",
+          "motion": {
+            "id": "mo-minutes",
+            "kind": "MAIN",
+            "text": "that the minutes of the October meeting be approved as distributed",
+            "mover": "bev",
+            "germane": true
+          }
+        }
+      }
+    },
+    {
+      "id": "i1-second-minutes",
+      "when": { "itemIndex": 0, "afterEventIntent": "MOTION_MOVED" },
+      "effect": { "kind": "SECOND", "member": "carl" }
+    },
+
+    {
+      "id": "i2-background",
+      "when": { "itemIndex": 1, "afterEventIntent": "OPEN_ITEM" },
+      "effect": { "kind": "NARRATION", "intent": "ITEM_BACKGROUND" }
+    },
+    {
+      "id": "i2-move-assessment",
+      "when": { "itemIndex": 1, "phase": "ITEM_OPEN", "afterEventIntent": "OPEN_ITEM" },
+      "effect": {
+        "kind": "REQUEST",
+        "request": {
+          "member": "dee",
+          "kind": "RECOGNITION",
+          "purpose": "MOVE",
+          "motion": {
+            "id": "mo-assessment",
+            "kind": "MAIN",
+            "text": "that the board levy a special assessment of eight hundred fifty dollars per unit, due within sixty days, to fund emergency repair of the retaining wall along the west property line",
+            "mover": "dee",
+            "germane": true
+          }
+        }
+      }
+    },
+    {
+      "id": "i2-second-assessment",
+      "when": { "itemIndex": 1, "afterEventIntent": "MOTION_MOVED" },
+      "effect": { "kind": "SECOND", "member": "ruth" }
+    },
+    {
+      "id": "i2-debate-for",
+      "when": { "itemIndex": 1, "phase": "DEBATE", "afterEventIntent": "STATE_MOTION" },
+      "effect": {
+        "kind": "REQUEST",
+        "request": { "member": "bev", "kind": "RECOGNITION", "purpose": "DEBATE_FOR" }
+      }
+    },
+    {
+      "id": "i2-carl-worries",
+      "when": { "itemIndex": 1, "phase": "DEBATE", "turnGte": 9 },
+      "effect": {
+        "kind": "REQUEST",
+        "request": { "member": "carl", "kind": "RECOGNITION", "purpose": "COMMENT" }
+      }
+    }
+  ],
+
+  "lines": {
+    "MEETING_SETTING": [
+      "The board of the {body} meets in the clubhouse annex, under a ceiling fan that has never once been balanced. {presentCount} of {seats} owners are seated, and the second item on tonight's agenda has a dollar figure attached to it, which everyone already knows.",
+      "Folding table, five chairs, one urn of coffee that stopped being hot at seven. The {body} board comes to order tonight with {presentCount} of {seats} owners present, one engineer's letter, and a wall that isn't getting any straighter while they wait."
+    ],
+    "QUORUM_PRESENT": [
+      "The clerk counts heads: {presentCount} present, and {quorum} is enough. The board can act.",
+      "{presentCount} owners in the room. Quorum is {quorum}. There is no excuse not to do business."
+    ],
+    "NO_QUORUM": [
+      "The clerk counts twice and gets the same answer both times. There are not enough owners here to decide anything.",
+      "Not enough of the board came. Whatever happens tonight, it will not be binding."
+    ],
+    "AWAITING_CALL_TO_ORDER": [
+      "Nobody sits down until the chair does. The first item is {itemTitle}.",
+      "The room is waiting on the chair. Somewhere behind the wall — the literal one, not the meeting — a French drain is quietly losing an argument."
+    ],
+    "CALL_TO_ORDER": [
+      "The chair calls the meeting to order at 7:05. First up: {itemTitle}.",
+      "The chair brings the room to order. Nobody is talking about the weather tonight."
+    ],
+    "OPEN_ITEM": [
+      "The chair opens {itemTitle}.",
+      "The chair turns the page. {itemTitle} is now the business of the board.",
+      "\"Next item,\" says the chair. \"{itemTitle}.\""
+    ],
+    "READ_ITEM": [
+      "The clerk reads item {itemNumber}: {itemTitle}.",
+      "Item {itemNumber} on tonight's agenda: {itemTitle}."
+    ],
+    "ITEM_BACKGROUND": [
+      "The packet on the retaining wall runs to four pages: a signed engineer's letter, three photographs of a crack that has widened since the last set of photographs, and a cost estimate that everyone has already read twice.",
+      "The engineer's letter is dated last Tuesday and does not hedge: the wall along the west line is failing, and the fix cannot wait for next year's budget. Notice went out to all owners thirty-one days ago.",
+      "This is not a surprise to everyone in the room. It is a surprise to some of them, which is its own kind of problem."
+    ],
+    "ITEM_RESOLVED": [
+      "That closes {itemTitle}.",
+      "{itemTitle} is finished. Somebody exhales.",
+      "The board is done with {itemTitle}, at least for tonight."
+    ],
+    "AGENDA_COMPLETE": [
+      "The clerk turns the page and finds nothing on it. That is the whole agenda.",
+      "There is no more business on the agenda. There is, as always, more business."
+    ],
+    "MOTION_MOVED": [
+      "There is a motion on the floor: {motionText}.",
+      "The motion before the board: {motionText}. It needs a second."
+    ],
+    "MOVE_OUT_OF_ORDER": [
+      "{memberName} starts to move something and stops. There is already business on the floor, and everyone knows it a half-second before they do.",
+      "{memberName} gets three words in before the room's silence explains that the board is already busy."
+    ],
+    "STATE_MOTION": [
+      "The chair puts the question to the board: {motionText}.",
+      "The chair reads it back so the room knows what it is arguing about: {motionText}.",
+      "\"The motion is {motionText},\" says the chair. \"Discussion.\""
+    ],
+    "NO_MOTION": [
+      "There is nothing on the floor. The chair is presiding over an empty table.",
+      "The board looks for the motion the chair is talking about. There isn't one."
+    ],
+    "VOTE_TAKEN": [
+      "The chair calls for the vote.",
+      "\"All in favor,\" says the chair, and the room finds out where it stands.",
+      "The chair puts it to the board: {motionText}. Aye or no."
+    ],
+    "VOICE_VOTE": [
+      "The ayes come back {ayes}, the noes {noes}, with {abstains} sitting it out.",
+      "Voices, not hands: {ayes} in favor, {noes} against, {abstains} silent.",
+      "The clerk counts it as {ayes} to {noes}, {abstains} abstaining, and writes it down before anyone changes their mind."
+    ],
+    "ROLL_CALL_VOTE": [
+      "The clerk reads the names one at a time. {ayes} aye, {noes} no, {abstains} abstaining.",
+      "Name by name, out loud, into the record: {ayes} to {noes}, with {abstains} abstaining."
+    ],
+    "ANNOUNCE_RESULT": [
+      "The chair announces it: {ayes} in favor, {noes} opposed, {abstains} abstaining. The motion is {result}.",
+      "\"{ayes} to {noes},\" the chair says. \"The motion is {result}.\" The clerk was already writing it.",
+      "The chair states the result for the record: {result}, {ayes} to {noes}, with {abstains} abstaining."
+    ],
+    "RULE_WELL_TAKEN": [
+      "The chair sustains the point. {memberName} sits back, vindicated, and will mention it again.",
+      "\"The point is well taken,\" the chair says, and the meeting takes a step backward to fix it."
+    ],
+    "RULE_NOT_WELL_TAKEN": [
+      "The chair rules the point out. {memberName} accepts it the way you accept weather.",
+      "\"I don't think that's a point of order,\" says the chair, \"but thank you.\" {memberName} makes a note of the time."
+    ],
+    "NOTHING_TO_RULE": [
+      "The chair rules on a point of order that nobody has made. The room lets it pass.",
+      "There is no point of order pending. The chair rules on it anyway, to a puzzled table."
+    ],
+    "ANSWER_INQUIRY": [
+      "The chair answers {memberName}: \"{answerText}\"",
+      "The chair takes the question. \"{answerText}\" It lands. {memberName} had been expecting worse."
+    ],
+    "NOTHING_TO_ANSWER": [
+      "The chair answers a question nobody asked. Five people look at each other.",
+      "There is no inquiry pending. The chair explains something anyway."
+    ],
+    "GAVEL_ORDER": [
+      "The chair raps the table twice. The room comes back.",
+      "The gavel — a wooden one, from the clubhouse cupboard — lands, and the crosstalk stops.",
+      "One sharp knock on the folding table and the room remembers there's a chair."
+    ],
+    "GAVEL_QUIET": [
+      "The gavel comes down on a silent room. Everyone looks up. Nobody had been talking.",
+      "The chair gavels. It is 7:22 and nothing was happening."
+    ],
+    "GAVEL_CUT_OFF": [
+      "The gavel lands in the middle of {memberName}'s sentence, and for once it's a mercy as much as a correction.",
+      "The chair cuts {memberName} off mid-thought. The room notices, and files it away."
+    ],
+    "CHAIR_WAITS": [
+      "The chair says nothing. The ceiling fan does its uneven thing.",
+      "The chair waits. Somebody's chair creaks.",
+      "Silence from the head of the table. It goes on a little too long."
+    ],
+    "ROOM_RESTLESS": [
+      "Nobody has dealt with the interruption. Two side conversations start, quietly, and then not quietly.",
+      "The room has stopped waiting for permission.",
+      "The interruption is still standing there. The board has begun to talk around the chair instead of to them."
+    ],
+    "RECOGNIZE_NOBODY": [
+      "The chair calls on a chair that nobody is in.",
+      "The chair recognizes someone who is not here. The board pretends not to have heard it."
+    ],
+    "RECESS": [
+      "The chair calls a recess of {minutes} minutes. Nobody goes for coffee tonight. They go stand by the window and do math.",
+      "\"{minutes} minutes,\" says the chair. Chairs scrape."
+    ],
+    "RESUME_FROM_RECESS": [
+      "The chair calls the board back. They are still on {itemTitle}.",
+      "Recess over. Back to {itemTitle}, whether anybody's ready or not."
+    ],
+    "ADJOURN": [
+      "The chair adjourns the meeting. {itemsCompleted} items are done and the rest is next month's problem.",
+      "\"We're adjourned,\" says the chair, and the room is standing before the sentence lands."
+    ],
+    "MEETING_ADJOURNED": [
+      "Chairs scrape back. Somebody folds the table before the clerk is finished writing.",
+      "The lights over the annex go off in the wrong order, as they always do."
+    ],
+    "MEETING_OVER": [
+      "The meeting is over. Whatever this is, it is not a meeting.",
+      "There is no business before the board. There is no board. Everyone has gone home."
+    ],
+    "ROOM_TALKS_OVER_CHAIR": [
+      "Three conversations start at once and not one of them is with the chair.",
+      "The room stops being a board and becomes five people in a clubhouse annex."
+    ],
+    "MOTION_DIES": [
+      "Whatever was on the floor is gone. Nobody could say when it died and the clerk stopped writing four minutes ago.",
+      "The motion is lost somewhere under the noise. It does not come back."
+    ],
+    "GAVEL_IGNORED": [
+      "The gavel sounds twice more. It might as well be the pool pump.",
+      "The chair raps the table. Nothing about the room changes."
+    ],
+    "SEEK_RECOGNITION": [
+      "{memberName} catches the chair's eye and waits.",
+      "{memberName} has something to say and is doing it the correct way, which takes longer."
+    ],
+    "DEMUR": [
+      "{memberName} shakes their head. They had nothing.",
+      "{memberName}: \"No, that wasn't me.\""
+    ],
+    "WITHDRAW_REQUEST": [
+      "{memberName} lowers their hand and lets it go.",
+      "{memberName} gives up on being called on."
+    ],
+    "CONFUSION": [
+      "{memberName} looks around the table, trying to work out what just happened.",
+      "{memberName} half-raises a hand, then doesn't."
+    ],
+    "INTERRUPT": [
+      "{memberName} stops waiting for the chair and simply starts talking.",
+      "{memberName} talks over the room."
+    ],
+    "INTERRUPT_LEGITIMIZED": [
+      "The chair gives {memberName} the floor, and the outburst becomes a speech, retroactively.",
+      "{memberName} is recognized, several sentences into being recognized."
+    ],
+    "RAISE_POINT_OF_ORDER": [
+      "{memberName} raises a point of order.",
+      "{memberName} has a point of order and is enjoying it."
+    ],
+    "RAISE_INQUIRY": [
+      "{memberName} has a question about how this is supposed to work.",
+      "{memberName} asks the chair a procedural question."
+    ],
+    "PROMPT_STATE_MOTION": [
+      "{memberName} points out, kindly, that the chair has not actually put the question to the board.",
+      "{memberName}: \"Chair, we haven't been told what we're debating.\""
+    ],
+    "PROMPT_BUSINESS": [
+      "{memberName} asks what the board intends to do about {itemTitle}.",
+      "{memberName} breaks the silence to ask where the board is on {itemTitle}."
+    ],
+    "SPEECH_CONTINUES": [
+      "{memberName} is still going. The point is out there somewhere.",
+      "{memberName} has not finished, and shows no sign of intending to."
+    ]
+  }
+}
