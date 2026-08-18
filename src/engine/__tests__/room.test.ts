@@ -249,6 +249,44 @@ describe('RULES_ENTHUSIAST', () => {
     const after = reduce(roomState({ phase: 'ITEM_OPEN' }), { verb: 'WAIT' }, scenario)
     expect(after.pendingRequests).toHaveLength(0)
   })
+
+  it('defers the point to the next turn when another scene has taken this one', () => {
+    // The drifting commenter is mid-speech, so the continuation owns the turn's
+    // one scene — and the chair picks exactly that turn to blunder.
+    const recognized = reduce(
+      roomState({
+        phase: 'DEBATE',
+        currentItem: PLAIN_ITEM,
+        motionStack: [makeMotion()],
+        pendingRequests: [recognitionRequest('m5', 1, 'DEBATE_FOR')],
+        log: [movedEvent(1)],
+      }),
+      { verb: 'RECOGNIZE', target: 'm5' },
+      scenario,
+    )
+    expect(recognized.room.drifting?.member).toBe('m5')
+
+    // CALL_ITEM with a motion on the floor is out of order (D3).
+    const blocked = reduce(recognized, { verb: 'CALL_ITEM' }, scenario)
+    expect(blocked.log.some((e) => e.intent === 'SPEECH_CONTINUES')).toBe(true)
+    expect(blocked.pendingRequests.filter((r) => r.kind === 'POINT_OF_ORDER')).toHaveLength(0)
+    expect(blocked.room.enthusiastPendingPoint).toBe(true)
+
+    // Deferred, not dropped: the objection lands on the next turn.
+    const after = reduce(blocked, { verb: 'WAIT' }, scenario)
+    const point = after.pendingRequests.find((r) => r.kind === 'POINT_OF_ORDER')
+    expect(point).toMatchObject({ member: 'm1', valid: true })
+    expect(after.room.enthusiastPendingPoint).toBe(false)
+  })
+
+  it('drops a deferred point when the enthusiast is already objecting', () => {
+    let s = reduce(roomState({ phase: 'ITEM_OPEN' }), { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+    expect(s.pendingRequests.filter((r) => r.kind === 'POINT_OF_ORDER')).toHaveLength(1)
+
+    s = reduce(s, { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+    expect(s.room.enthusiastPendingPoint).toBe(false)
+    expect(s.pendingRequests.filter((r) => r.kind === 'POINT_OF_ORDER')).toHaveLength(1)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -386,6 +424,27 @@ describe('VETERAN', () => {
   it('stays quiet on an item that is not flagged', () => {
     const after = roomRespond(baitedDebate({ currentItem: PLAIN_ITEM }), scenario)
     expect(after.pendingRequests.filter((r) => r.member === 'm2')).toHaveLength(0)
+  })
+
+  it('keeps waiting when the same member is recognized twice', () => {
+    // Patience is spent by *members* getting in ahead of them, not by the
+    // number of times the gavel pointed somewhere else.
+    let s = roomRespond(baitedDebate(), scenario)
+    s = nextTurn(s, {
+      memberMood: { ...s.memberMood, m1: { impatience: 0, timesRecognized: 2 } },
+    })
+    s = roomRespond(s, scenario)
+
+    expect(reasons(s)).not.toContain('IGNORED_REQUEST_TIMEOUT')
+    expect(s.pendingRequests.some((r) => r.member === 'm2')).toBe(true)
+
+    // A second, different member is what finally does it.
+    s = nextTurn(s, {
+      memberMood: { ...s.memberMood, m4: { impatience: 0, timesRecognized: 1 } },
+    })
+    s = roomRespond(s, scenario)
+    expect(reasons(s)).toContain('IGNORED_REQUEST_TIMEOUT')
+    expect(s.pendingRequests.filter((r) => r.member === 'm2')).toHaveLength(0)
   })
 
   it('times out at 4 trust and withdraws once two other members are recognized', () => {

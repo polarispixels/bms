@@ -132,8 +132,17 @@ export type RoomSim = {
   firedBeats: string[]
   /** Agenda item ids the veteran has already reacted to. */
   veteranItems: string[]
-  /** Other members' total recognitions when the veteran filed; null when idle. */
-  veteranBaseline: number | null
+  /**
+   * Every member's recognition count at the moment the veteran filed, so their
+   * patience can be spent by *distinct* members getting the floor ahead of
+   * them (D6: "2 other members have been recognized since"). Null when idle.
+   */
+  veteranBaseline: Record<MemberId, number> | null
+  /**
+   * The rules enthusiast has an objection ready but the turn's one scene was
+   * already spent. Deferred, not dropped: it files on a later turn (D4).
+   */
+  enthusiastPendingPoint: boolean
   /** A drifting speech still running into its second turn (D6). */
   drifting: { member: MemberId; startedTurn: number } | null
   /** Requests that already charged IGNORED_REQUEST_TIMEOUT (fires once each). */

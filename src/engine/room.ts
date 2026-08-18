@@ -43,7 +43,14 @@ const DEBATE_INTENTS: readonly string[] = ['DEBATE_FOR', 'DEBATE_AGAINST', 'COMM
 
 /** A fresh room: nothing has fired, nobody is mid-ramble. */
 export function initialRoom(): RoomSim {
-  return { firedBeats: [], veteranItems: [], veteranBaseline: null, drifting: null, timedOutRequests: [] }
+  return {
+    firedBeats: [],
+    veteranItems: [],
+    veteranBaseline: null,
+    enthusiastPendingPoint: false,
+    drifting: null,
+    timedOutRequests: [],
+  }
 }
 
 /**
@@ -86,11 +93,28 @@ function motionMovedTurn(state: MeetingState, motionId: string): number | null {
   return null
 }
 
-/** Total recognitions handed to everyone except `member`. */
-function recognitionsElsewhere(state: MeetingState, member: MemberId): number {
-  return Object.entries(state.memberMood)
-    .filter(([id]) => id !== member)
-    .reduce((total, [, m]) => total + m.timesRecognized, 0)
+/** Everyone's recognition count right now, as a baseline to compare against later. */
+function recognitionSnapshot(state: MeetingState): Record<MemberId, number> {
+  const snapshot: Record<MemberId, number> = {}
+  for (const [id, mood] of Object.entries(state.memberMood)) {
+    snapshot[id] = mood.timesRecognized
+  }
+  return snapshot
+}
+
+/**
+ * How many *distinct* members, other than `member`, have been recognized since
+ * the baseline was taken. Counting members rather than recognitions is the
+ * point: one member called on twice is one member who got in ahead of you.
+ */
+function membersRecognizedSince(
+  state: MeetingState,
+  baseline: Record<MemberId, number>,
+  member: MemberId,
+): number {
+  return Object.entries(state.memberMood).filter(
+    ([id, mood]) => id !== member && mood.timesRecognized > (baseline[id] ?? 0),
+  ).length
 }
 
 function dropRequest(state: MeetingState, id: string): void {
@@ -266,15 +290,29 @@ function interrupter(turn: Turn, member: Member): Turn {
  * The chair's mistakes are this member's cue. Any out-of-order action charged
  * this turn — including calling a vote on a motion that was never stated —
  * earns a point of order that is, annoyingly, correct.
+ *
+ * An objection that cannot be voiced because the turn's scene is already spent
+ * is *deferred, not dropped*: it waits in `room.enthusiastPendingPoint` and is
+ * raised on the next turn with room for it. The one exception is a point of
+ * theirs that is still pending — that objection already stands, so a second
+ * one is neither filed nor queued.
  */
 function rulesEnthusiast(turn: Turn, member: Member): Turn {
   const draft = turn.draft
-  if (turn.scene) return turn
-  if (hasPending(draft, member.id, 'POINT_OF_ORDER')) return turn
-
   const chairErred = draft.meterLog.some((d) => d.turn === draft.turn && d.reason === 'OUT_OF_ORDER_ACTION')
-  if (!chairErred) return turn
+  const wants = draft.room.enthusiastPendingPoint || chairErred
+  if (!wants) return turn
 
+  if (hasPending(draft, member.id, 'POINT_OF_ORDER')) {
+    draft.room = { ...draft.room, enthusiastPendingPoint: false }
+    return turn
+  }
+  if (turn.scene) {
+    draft.room = { ...draft.room, enthusiastPendingPoint: true }
+    return turn
+  }
+
+  draft.room = { ...draft.room, enthusiastPendingPoint: false }
   fileRequest(draft, {
     id: requestId(draft) + '-poo',
     kind: 'POINT_OF_ORDER',
@@ -304,7 +342,7 @@ function veteran(turn: Turn, member: Member): Turn {
   draft.room = {
     ...draft.room,
     veteranItems: [...draft.room.veteranItems, item.id],
-    veteranBaseline: recognitionsElsewhere(draft, member.id),
+    veteranBaseline: recognitionSnapshot(draft),
   }
   return { draft, scene: true }
 }
@@ -424,8 +462,8 @@ function timeOutRequests(draft: MeetingState): MeetingState {
 }
 
 /**
- * The veteran's own patience runs on recognitions, not turns: two other
- * members called on ahead of them and the story goes untold (D6).
+ * The veteran's own patience runs on who got the floor, not on turns: two
+ * other *members* called on ahead of them and the story goes untold (D6).
  */
 function timeOutVeteran(draft: MeetingState): MeetingState {
   const baseline = draft.room.veteranBaseline
@@ -437,7 +475,7 @@ function timeOutVeteran(draft: MeetingState): MeetingState {
     draft.room = { ...draft.room, veteranBaseline: null }
     return draft
   }
-  if (recognitionsElsewhere(draft, veteranMember.id) - baseline < VETERAN_PATIENCE) return draft
+  if (membersRecognizedSince(draft, baseline, veteranMember.id) < VETERAN_PATIENCE) return draft
 
   let next = draft
   if (!next.room.timedOutRequests.includes(request.id)) {
