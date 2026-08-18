@@ -55,21 +55,34 @@ function scoreEfficiency(state: MeetingState, scenario: Scenario): number {
   return Math.max(0, 100 - 4 * overPar)
 }
 
-/** Counts both unstated motions and announce delays from the log. */
-function countClarityPenalties(state: MeetingState): { unstatedMotions: number; announceDelays: number } {
-  let unstatedMotions = 0
+/**
+ * Both clarity terms, counted off the event log.
+ *
+ * The unstated-motion term counts *attempts*, not completed votes. D3 makes
+ * CALL_VOTE out of order on a motion the chair never stated, so `applyCallVote`
+ * never runs on one and no VOTE_TAKEN event with `statedByChair: false` can
+ * ever exist — scoring off that field scored a state the engine cannot reach.
+ * The evidence that does exist is the out-of-order attempt itself, which the
+ * reducer records as a CONFUSION event carrying the attempted `verb`.
+ *
+ * Caveat, both terms: `state.log` is truncated to its last 20 entries by every
+ * checkpoint snapshot (D10), so a meeting that collapsed and restored can
+ * undercount. It fails toward leniency — never toward inventing a penalty.
+ */
+function countClarityPenalties(state: MeetingState): {
+  prematureVoteAttempts: number
+  announceDelays: number
+} {
+  let prematureVoteAttempts = 0
   let announceDelays = 0
   const votesTaken = new Map<string, number>() // motionId -> turn of VOTE_TAKEN
 
   for (const event of state.log) {
-    if (event.intent === 'VOTE_TAKEN') {
+    if (event.intent === 'CONFUSION' && event.payload.verb === 'CALL_VOTE') {
+      prematureVoteAttempts++
+    } else if (event.intent === 'VOTE_TAKEN') {
       const motionId = event.payload.motionId as string
-      const statedByChair = event.payload.statedByChair as boolean
       const turn = event.payload.turn as number
-
-      if (!statedByChair) {
-        unstatedMotions++
-      }
       votesTaken.set(motionId, turn)
     } else if (event.intent === 'ANNOUNCE_RESULT') {
       const motionId = event.payload.motionId as string
@@ -86,12 +99,12 @@ function countClarityPenalties(state: MeetingState): { unstatedMotions: number; 
     }
   }
 
-  return { unstatedMotions, announceDelays }
+  return { prematureVoteAttempts, announceDelays }
 }
 
 function scoreClarity(state: MeetingState): number {
-  const { unstatedMotions, announceDelays } = countClarityPenalties(state)
-  return Math.max(0, 100 - 10 * unstatedMotions - 5 * announceDelays)
+  const { prematureVoteAttempts, announceDelays } = countClarityPenalties(state)
+  return Math.max(0, 100 - 10 * prematureVoteAttempts - 5 * announceDelays)
 }
 
 function scoreCompletion(state: MeetingState, scenario: Scenario): number {
@@ -173,22 +186,33 @@ function notesForEfficiency(state: MeetingState, scenario: Scenario, score: numb
   return notes
 }
 
+/**
+ * The clean note is an assertion about the record, so it is only allowed to
+ * appear when the record actually supports it: a perfect clarity score *and* a
+ * meeting that never went out of order. Anything less gets a note that says
+ * what happened instead.
+ */
 function notesForClarity(state: MeetingState, score: number): string[] {
   const notes: string[] = []
 
-  const { unstatedMotions, announceDelays } = countClarityPenalties(state)
+  const { prematureVoteAttempts, announceDelays } = countClarityPenalties(state)
 
-  if (unstatedMotions === 0 && announceDelays === 0) {
-    notes.push('All motions were properly stated and vote results announced promptly.')
-  } else {
-    if (unstatedMotions > 0) {
+  if (prematureVoteAttempts > 0) {
+    notes.push(
+      `The chair called for a vote on a motion that had never been stated ${prematureVoteAttempts} time${prematureVoteAttempts === 1 ? '' : 's'}; ${prematureVoteAttempts === 1 ? 'that vote was' : 'those votes were'} premature and did not happen.`,
+    )
+  }
+  if (announceDelays > 0) {
+    notes.push(
+      `${announceDelays} vote result${announceDelays === 1 ? '' : 's'} ${announceDelays === 1 ? 'was' : 'were'} announced with delay.`,
+    )
+  }
+  if (prematureVoteAttempts === 0 && announceDelays === 0) {
+    if (score === 100 && state.outOfOrderCount === 0) {
+      notes.push('All motions were properly stated and vote results announced promptly.')
+    } else {
       notes.push(
-        `${unstatedMotions} motion${unstatedMotions === 1 ? '' : 's'} ${unstatedMotions === 1 ? 'was' : 'were'} handled without being stated.`,
-      )
-    }
-    if (announceDelays > 0) {
-      notes.push(
-        `${announceDelays} vote result${announceDelays === 1 ? '' : 's'} ${announceDelays === 1 ? 'was' : 'were'} announced with delay.`,
+        'No motion reached a vote unstated, though the meeting did not run entirely in order.',
       )
     }
   }
@@ -245,6 +269,7 @@ const PEDANTRY_MAP: Record<string, string> = {
   INVALID_RULING: 'The chair ruled against a valid procedural point.',
   TECHNICALITY_RULING: 'The chair upheld a flawed procedural objection.',
   CORRECT_RULING: 'The chair made a sound procedural ruling.',
+  FAIR_RULING: 'The chair ruled on the point without appearing to take a side.',
   SELECTIVE_RECOGNITION: 'The chair recognized a member out of queue.',
   WRONG_INQUIRY_ANSWER: 'The chair gave an incorrect answer to a point of inquiry.',
   IGNORED_REQUEST_TIMEOUT: 'A member waited too long for the chair to respond.',
@@ -254,17 +279,35 @@ const PEDANTRY_MAP: Record<string, string> = {
   CUT_OFF_RAMBLER: 'The chair gaveled a long-winded member.',
 }
 
+/**
+ * Reasons that describe the same moment from two angles. One ruling that
+ * matches the point charges CORRECT_RULING *and* FAIR_RULING, and listing both
+ * reads as the clerk saying the same thing twice — so only the first reason of
+ * a group survives. Sorting by magnitude means that is CORRECT_RULING (+4)
+ * ahead of FAIR_RULING (+3); either one alone still gets its own line.
+ */
+const PEDANTRY_GROUPS: Record<string, string> = {
+  CORRECT_RULING: 'ruling',
+  FAIR_RULING: 'ruling',
+}
+
 function generatePedantry(state: MeetingState): string[] {
   const selectedReasons = new Map<string, MeterDelta>()
+  const usedGroups = new Set<string>()
 
   // Pick the most significant (largest magnitude) deltas, favoring negative ones
   const sorted = [...state.meterLog].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
 
   for (const delta of sorted) {
     if (selectedReasons.size >= 6) break
-    if (!selectedReasons.has(delta.reason)) {
-      selectedReasons.set(delta.reason, delta)
+    if (selectedReasons.has(delta.reason)) continue
+
+    const group = PEDANTRY_GROUPS[delta.reason]
+    if (group !== undefined) {
+      if (usedGroups.has(group)) continue
+      usedGroups.add(group)
     }
+    selectedReasons.set(delta.reason, delta)
   }
 
   // If we have fewer than 3 entries, fill with praise or generic positives

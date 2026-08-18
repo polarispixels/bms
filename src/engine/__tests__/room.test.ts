@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import { validateScenario } from '../../content/schema'
 import type { Beat, Scenario } from '../../content/schema'
+import { captureCheckpoint, restoreCheckpoint } from '../checkpoints'
 import { reduce } from '../reducer'
 import { roomRespond } from '../room'
 import type { MeetingEvent, MeetingState, Motion, Request } from '../types'
@@ -87,6 +88,7 @@ function makeMotion(partial?: Partial<Motion>): Motion {
     germane: true,
     statedByChair: true,
     debateSpeeches: 0,
+    movedTurn: 1,
     votes: { m1: 'AYE', m2: 'AYE', m3: 'AYE', m4: 'AYE', m5: 'AYE' },
     ...partial,
   }
@@ -361,6 +363,39 @@ describe('STABILIZER', () => {
     expect(reasons(after)).toEqual(['STABILIZER_RESCUE'])
     expect(after.meters.control).toBe(66)
     expect(after.log.some((e) => e.type === 'SPEECH' && e.actor === 'm4')).toBe(true)
+  })
+
+  it('still rescues an unseconded motion after a restore truncated MOTION_MOVED out of the log', () => {
+    // The motion's age used to be recovered by scanning the log for its
+    // MOTION_MOVED event. A checkpoint keeps only the last 20 log entries, so
+    // after a restore that scan came back empty, the age read as "unknown",
+    // and the stabilizer silently stopped rescuing. Motion.movedTurn survives
+    // the snapshot, so the rescue must survive it too.
+    const filler: MeetingEvent[] = Array.from({ length: 25 }, (_, i) => ({
+      id: `f${i}`,
+      type: 'NARRATION',
+      actor: 'SYSTEM',
+      intent: 'CHAIR_WAITS',
+      payload: {},
+    }))
+
+    const before = roomState({
+      phase: 'MOTION_PENDING',
+      turn: 3,
+      motionStack: [makeMotion({ seconded: false, secondedBy: null, statedByChair: false, movedTurn: 1 })],
+      log: [movedEvent(1), ...filler],
+    })
+
+    const { state: restored } = restoreCheckpoint(captureCheckpoint(before, 'Before the vote'))
+
+    // Precondition: the restore really did lose the event the old code read.
+    expect(restored.log.some((e) => e.intent === 'MOTION_MOVED')).toBe(false)
+    expect(restored.motionStack[0].movedTurn).toBe(1)
+
+    const after = roomRespond(restored, scenario)
+    expect(after.motionStack[0].seconded).toBe(true)
+    expect(after.motionStack[0].secondedBy).toBe('m4')
+    expect(reasons(after)).toEqual(['STABILIZER_RESCUE'])
   })
 
   it('leaves a freshly moved motion alone', () => {

@@ -171,7 +171,9 @@ async function pickFromList<T>(items: T[], render: (item: T) => string, prompt: 
   if (line === null) return { kind: 'EOF' }
   const n = Number(line.trim())
   if (!Number.isInteger(n) || n < 1 || n > items.length) {
-    out(`  Not a valid choice; leaving ${prompt} unset.`)
+    // Not "unset" — there is no unset target for these verbs. The first entry
+    // is what actually gets used, so say so.
+    out(`  Not a valid choice; defaulting to the first ${prompt}: ${render(items[0])}`)
     return { kind: 'PICKED', value: items[0] }
   }
   return { kind: 'PICKED', value: items[n - 1] }
@@ -332,6 +334,18 @@ async function main(): Promise<void> {
     if (state.phase === 'COLLAPSED') {
       const { state: restored, diagnostic } = restoreCheckpoint(state)
       printCollapseDiagnostic(diagnostic)
+
+      // Collapse before the first checkpoint boundary: there is nothing to
+      // rewind to, so don't offer the choice (and don't eat a line of input
+      // answering a question with only one answer) — the same call CollapseModal
+      // makes when it hides its restore button.
+      if (state.checkpoints.length === 0) {
+        out()
+        out('The meeting collapsed before it reached a checkpoint; there is nothing to return to.')
+        out(`Session ended: ${turnsTaken} action(s) taken, meeting collapsed.`)
+        break
+      }
+
       out('Return to last checkpoint? (y/n)')
       const answer = await nextLine()
       if (answer === null) {

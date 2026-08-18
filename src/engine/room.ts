@@ -76,25 +76,21 @@ function motionText(state: MeetingState): string {
   return topMotion(state.motionStack)?.text ?? ''
 }
 
-/** Ids are drawn from the event counter, so they are unique and reproducible. */
+/**
+ * Ids are drawn from the event counter, so they are unique and reproducible.
+ *
+ * Callers append a per-source suffix (`-poo`, `-vet`, and the `beat-` prefix in
+ * applyBeat) and those suffixes are load-bearing, not decoration: `eventSeq`
+ * rides through a checkpoint restore unchanged but the *turn* replays, so two
+ * different archetypes filing on the same replayed turn can land on the same
+ * `r{eventSeq}` stem. The suffix is what keeps their request ids distinct.
+ */
 function requestId(state: MeetingState): string {
   return `r${state.eventSeq}`
 }
 
 function hasPending(state: MeetingState, member: MemberId, kind: Request['kind']): boolean {
   return state.pendingRequests.some((r) => r.member === member && r.kind === kind)
-}
-
-/** The turn a motion was moved on, read back from its own event; null if unknown. */
-function motionMovedTurn(state: MeetingState, motionId: string): number | null {
-  for (let i = state.log.length - 1; i >= 0; i -= 1) {
-    const event = state.log[i]
-    if (event.intent === 'MOTION_MOVED' && event.payload.motionId === motionId) {
-      const turn = event.payload.turn
-      return typeof turn === 'number' ? turn : null
-    }
-  }
-  return null
 }
 
 /** Everyone's recognition count right now, as a baseline to compare against later. */
@@ -367,8 +363,10 @@ function stabilizer(turn: Turn, member: Member): Turn {
   if (draft.turn <= draft.room.stabilizerCooldownUntil) return turn
 
   const top = topMotion(draft.motionStack)
-  const movedTurn = top ? motionMovedTurn(draft, top.id) : null
-  const age = movedTurn === null ? null : draft.turn - movedTurn
+  // Age comes off the motion itself (Motion.movedTurn), not off a MOTION_MOVED
+  // log scan: a restored checkpoint may have truncated that event away, which
+  // used to read as "age unknown" and quietly disable both rescues below.
+  const age = top ? draft.turn - top.movedTurn : null
 
   const stalled = draft.consecutiveWaits >= 2
   const unseconded = top !== null && !top.seconded && age !== null && age >= UNSECONDED_GRACE

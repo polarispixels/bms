@@ -15,6 +15,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const result = pushMotion([], m)
@@ -33,6 +34,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const main2: Motion = {
@@ -45,6 +47,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const stack = [main1]
@@ -65,6 +68,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const amend: Motion = {
@@ -77,6 +81,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const result = pushMotion([main], amend)
@@ -96,6 +101,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       expect(() => pushMotion([], amend)).toThrow()
@@ -113,6 +119,7 @@ describe('motions', () => {
           germane: true,
           statedByChair: false,
           debateSpeeches: 0,
+          movedTurn: 1,
           votes: {},
         },
         {
@@ -125,6 +132,7 @@ describe('motions', () => {
           germane: true,
           statedByChair: false,
           debateSpeeches: 0,
+          movedTurn: 1,
           votes: {},
         },
         {
@@ -137,6 +145,7 @@ describe('motions', () => {
           germane: true,
           statedByChair: false,
           debateSpeeches: 0,
+          movedTurn: 1,
           votes: {},
         },
       ]
@@ -150,6 +159,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       expect(() => pushMotion(motions, newMotion)).toThrow()
@@ -167,6 +177,7 @@ describe('motions', () => {
           germane: true,
           statedByChair: false,
           debateSpeeches: 0,
+          movedTurn: 1,
           votes: {},
         },
       ]
@@ -180,6 +191,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const originalLength = stack.length
@@ -204,6 +216,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const stack = [m]
@@ -221,6 +234,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const amend: Motion = {
@@ -233,6 +247,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       expect(topMotion([main, amend])).toEqual(amend)
@@ -255,6 +270,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const result = popMotion([m])
@@ -273,6 +289,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const amend: Motion = {
@@ -285,6 +302,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       const result = popMotion([main, amend])
@@ -305,6 +323,7 @@ describe('motions', () => {
           germane: true,
           statedByChair: false,
           debateSpeeches: 0,
+          movedTurn: 1,
           votes: {},
         },
       ]
@@ -326,6 +345,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       expect(isDebatable(m)).toBe(true)
@@ -342,6 +362,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       expect(isDebatable(m)).toBe(true)
@@ -360,6 +381,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       expect(voteThreshold(m)).toBe('MAJORITY')
@@ -376,6 +398,7 @@ describe('motions', () => {
         germane: true,
         statedByChair: false,
         debateSpeeches: 0,
+        movedTurn: 1,
         votes: {},
       }
       expect(voteThreshold(m)).toBe('MAJORITY')

@@ -245,6 +245,9 @@ function applyMove(draft: MeetingState, request: Request, scenario: Scenario): v
     secondedBy: null,
     statedByChair: false,
     debateSpeeches: 0,
+    // Stamped here, once, so the room can read the motion's age straight off
+    // the motion — a log scan would lose it to checkpoint truncation.
+    movedTurn: draft.turn,
   }
   draft.motionStack = pushMotion(draft.motionStack, motion)
   draft.phase = 'MOTION_PENDING'

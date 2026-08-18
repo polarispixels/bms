@@ -53,6 +53,7 @@ const FALLBACK_LINES: Record<string, string> = {
   // Voting
   VOTE_TAKEN: 'The chair puts the question to a vote.',
   VOICE_VOTE: 'Ayes and noes come back across the table: {ayes} to {noes}, with {abstains} silent.',
+  ROLL_CALL_VOTE: 'The clerk reads the roll and marks each answer: {ayes} aye, {noes} no, {abstains} abstaining.',
   ANNOUNCE_RESULT: 'The chair announces the vote: {ayes} in favor, {noes} opposed, {abstains} abstaining. The motion is {result}.',
 
   // The room speaking up (D6/D7)

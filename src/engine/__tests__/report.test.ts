@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
+import { initMeeting, reduce } from '../reducer'
 import { buildReportCard } from '../report'
 import type { MeterDelta } from '../types'
+import { fixtureScenario } from './fixture'
 import { makeState } from './helpers'
 
 describe('buildReportCard', () => {
@@ -250,38 +252,98 @@ describe('buildReportCard', () => {
       expect(report.grades.clarity.grade).toBe('A')
     })
 
-    it('penalizes unstated motions: VOTE_TAKEN with statedByChair: false', () => {
+    it('scores a clean game 100 and says so, without hedging', () => {
       const state = makeState({
         meters: { control: 95, trust: 95 },
         outOfOrderCount: 0,
         meterLog: [],
         itemsCompleted: 2,
         turn: 11,
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      expect(report.grades.clarity.score).toBe(100)
+      expect(report.grades.clarity.notes).toContain(
+        'All motions were properly stated and vote results announced promptly.',
+      )
+    })
+
+    it('penalizes each out-of-order CALL_VOTE attempt 10 points', () => {
+      // The real evidence of an unstated motion going to a vote: D3 makes
+      // CALL_VOTE out of order on an unstated motion, so `applyCallVote` never
+      // runs and no VOTE_TAKEN event ever carries statedByChair: false. What
+      // the log holds is the reducer's CONFUSION event, stamped with the verb.
+      const state = makeState({
+        meters: { control: 95, trust: 95 },
+        outOfOrderCount: 3,
+        meterLog: [],
+        itemsCompleted: 2,
+        turn: 11,
+        log: [1, 2, 3].map((n) => ({
+          id: `e${n}`,
+          type: 'SPEECH' as const,
+          actor: 'm2',
+          intent: 'CONFUSION',
+          payload: { memberName: 'Member Two', verb: 'CALL_VOTE' },
+        })),
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      // 100 - 10*3 = 70
+      expect(report.grades.clarity.score).toBe(70)
+      expect(report.grades.clarity.score).toBeLessThanOrEqual(70)
+      expect(report.grades.clarity.grade).toBe('C')
+    })
+
+    it('never claims all motions were stated when premature votes were attempted', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 95 },
+        outOfOrderCount: 3,
+        meterLog: [],
+        itemsCompleted: 2,
+        turn: 11,
+        log: [1, 2, 3].map((n) => ({
+          id: `e${n}`,
+          type: 'SPEECH' as const,
+          actor: 'm2',
+          intent: 'CONFUSION',
+          payload: { memberName: 'Member Two', verb: 'CALL_VOTE' },
+        })),
+      })
+
+      const notes = buildReportCard(state, scenario).grades.clarity.notes
+
+      expect(notes.some((n) => /properly stated/.test(n))).toBe(false)
+      expect(notes.some((n) => /never been stated|premature/i.test(n))).toBe(true)
+      expect(notes.some((n) => n.includes('3'))).toBe(true)
+    })
+
+    it('ignores out-of-order attempts at other verbs', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 95 },
+        outOfOrderCount: 1,
+        meterLog: [],
+        itemsCompleted: 2,
+        turn: 11,
         log: [
           {
             id: 'e1',
-            type: 'STATE_CHANGE',
-            actor: 'CHAIR',
-            intent: 'VOTE_TAKEN',
-            payload: {
-              motionId: 'motion-1',
-              motionText: 'test motion',
-              method: 'VOICE' as const,
-              statedByChair: false,
-              ayes: 3,
-              noes: 1,
-              abstains: 1,
-              turn: 5,
-            },
+            type: 'SPEECH' as const,
+            actor: 'm2',
+            intent: 'CONFUSION',
+            payload: { memberName: 'Member Two', verb: 'CALL_ITEM' },
           },
         ],
       })
 
       const report = buildReportCard(state, scenario)
 
-      // 100 - 10*1 = 90
-      expect(report.grades.clarity.score).toBe(90)
-      expect(report.grades.clarity.grade).toBe('A')
+      // Clarity is untouched — but the note must not assert a clean record
+      // either, because the meeting did go out of order.
+      expect(report.grades.clarity.score).toBe(100)
+      expect(report.grades.clarity.notes.some((n) => /properly stated/.test(n))).toBe(false)
     })
 
     it('penalizes announce delays: VOTE_TAKEN at turn T, ANNOUNCE_RESULT at turn T+2', () => {
@@ -335,14 +397,21 @@ describe('buildReportCard', () => {
       expect(report.grades.clarity.grade).toBe('A')
     })
 
-    it('combines both penalties: unstated + announce delay', () => {
+    it('combines both penalties: premature vote attempt + announce delay', () => {
       const state = makeState({
         meters: { control: 95, trust: 95 },
-        outOfOrderCount: 0,
+        outOfOrderCount: 1,
         meterLog: [],
         itemsCompleted: 2,
         turn: 11,
         log: [
+          {
+            id: 'e0',
+            type: 'SPEECH' as const,
+            actor: 'm2',
+            intent: 'CONFUSION',
+            payload: { memberName: 'Member Two', verb: 'CALL_VOTE' },
+          },
           {
             id: 'e1',
             type: 'STATE_CHANGE',
@@ -352,7 +421,7 @@ describe('buildReportCard', () => {
               motionId: 'motion-1',
               motionText: 'test motion',
               method: 'VOICE' as const,
-              statedByChair: false,
+              statedByChair: true,
               ayes: 3,
               noes: 1,
               abstains: 1,
@@ -384,6 +453,31 @@ describe('buildReportCard', () => {
       // 100 - 10*1 - 5*1 = 85
       expect(report.grades.clarity.score).toBe(85)
       expect(report.grades.clarity.grade).toBe('B')
+    })
+  })
+
+  // The clarity unit tests above hand-build a log. This one plays the mistake
+  // for real through `reduce`, which is the only proof that the term is
+  // reachable at all — the old statedByChair term never was.
+  describe('clarity, played out through reduce', () => {
+    it('charges three real out-of-order CALL_VOTE attempts and says so in the notes', () => {
+      const sc = fixtureScenario()
+      let state = initMeeting(sc, 7)
+      state = reduce(state, { verb: 'CALL_ITEM' }, sc) // ITEM_OPEN, nothing moved
+
+      for (let i = 0; i < 3; i += 1) {
+        state = reduce(state, { verb: 'CALL_VOTE', method: 'VOICE' }, sc)
+      }
+
+      expect(state.outOfOrderCount).toBe(3)
+      expect(state.log.filter((e) => e.intent === 'CONFUSION' && e.payload.verb === 'CALL_VOTE')).toHaveLength(3)
+      // No vote was ever taken: the attempts never reached applyCallVote.
+      expect(state.log.some((e) => e.intent === 'VOTE_TAKEN')).toBe(false)
+
+      const clarity = buildReportCard(state, sc).grades.clarity
+      expect(clarity.score).toBeLessThanOrEqual(70)
+      expect(clarity.notes.some((n) => /never been stated|premature/i.test(n))).toBe(true)
+      expect(clarity.notes.some((n) => /properly stated/.test(n))).toBe(false)
     })
   })
 
@@ -442,6 +536,37 @@ describe('buildReportCard', () => {
       expect(report.pedantry.length).toBeGreaterThanOrEqual(3)
       expect(report.pedantry.length).toBeLessThanOrEqual(6)
       expect(report.pedantry.every((p) => typeof p === 'string' && p.length > 0)).toBe(true)
+    })
+
+    it('renders FAIR_RULING in pedantic voice rather than leaking the meter label', () => {
+      const state = makeState({
+        meterLog: [{ turn: 1, meter: 'trust', delta: 3, reason: 'FAIR_RULING', label: 'A fair ruling, fairly delivered' }],
+        itemsCompleted: 2,
+        turn: 11,
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      expect(report.pedantry).toContain('The chair ruled on the point without appearing to take a side.')
+      expect(report.pedantry).not.toContain('A fair ruling, fairly delivered')
+    })
+
+    it('lists one ruling once, not twice, when CORRECT_RULING and FAIR_RULING both fired', () => {
+      // One sound ruling charges both keys (reducer.applyRule); the report is
+      // not allowed to bill the player's ear for it twice.
+      const state = makeState({
+        meterLog: [
+          { turn: 1, meter: 'control', delta: 4, reason: 'CORRECT_RULING', label: 'Chair\'s ruling matched the validity of the point' },
+          { turn: 1, meter: 'trust', delta: 3, reason: 'FAIR_RULING', label: 'A fair ruling, fairly delivered' },
+        ],
+        itemsCompleted: 2,
+        turn: 11,
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      const rulingLines = report.pedantry.filter((p) => /ruling|ruled/.test(p))
+      expect(rulingLines).toEqual(['The chair made a sound procedural ruling.'])
     })
 
     it('handles clean games with pedantic praise', () => {

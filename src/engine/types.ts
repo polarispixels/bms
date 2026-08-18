@@ -88,6 +88,17 @@ export type Motion = {
   germane: boolean // authored; always true in Level 1
   statedByChair: boolean // chair must STATE_MOTION before debate
   debateSpeeches: number // completed speeches on this motion
+  /**
+   * The turn the motion was moved on, stamped by the reducer at MOVE time.
+   *
+   * It lives on the motion rather than being read back out of the MOTION_MOVED
+   * event because checkpoint snapshots truncate `log` to its last 20 entries
+   * (D10): after a restore the event can be gone, and a log scan would return
+   * "unknown", silently switching off every age-based room rule (the
+   * stabilizer's unseconded/unstated rescues). The motion object survives the
+   * snapshot intact, so the age does too.
+   */
+  movedTurn: number
   votes: Record<MemberId, 'AYE' | 'NO' | 'ABSTAIN'> // authored stances
 }
 
@@ -98,7 +109,8 @@ export type Request = {
   createdTurn: number
   // RECOGNITION: what the member will do if recognized
   purpose?: 'MOVE' | 'SECOND' | 'DEBATE_FOR' | 'DEBATE_AGAINST' | 'COMMENT'
-  motion?: Omit<Motion, 'seconded' | 'secondedBy' | 'statedByChair' | 'debateSpeeches'> // for purpose MOVE
+  // for purpose MOVE; the reducer supplies the fields it owns, `movedTurn` included
+  motion?: Omit<Motion, 'seconded' | 'secondedBy' | 'statedByChair' | 'debateSpeeches' | 'movedTurn'>
   // POINT_OF_ORDER:
   claim?: string
   valid?: boolean // authored/derived; deterministic ground truth

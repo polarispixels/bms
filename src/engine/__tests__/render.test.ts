@@ -55,6 +55,24 @@ describe('renderEvent', () => {
     expect(line).not.toContain('{')
   })
 
+  it('has a built-in clerk line for a roll-call vote, not the generic type sentence', () => {
+    // The fixture authors no ROLL_CALL_VOTE variants, so this is the built-in.
+    const { line } = renderEvent(
+      event({
+        type: 'NARRATION',
+        actor: 'CLERK',
+        intent: 'ROLL_CALL_VOTE',
+        payload: { motionText: FIXTURE_MOTION_TEXT, ayes: 3, noes: 1, abstains: 1 },
+      }),
+      scenario,
+      1,
+    )
+    expect(line).not.toBe('The room settles.') // GENERIC_BY_TYPE.NARRATION
+    expect(line).toContain('roll')
+    expect(line).toContain('3')
+    expect(line).not.toContain('{')
+  })
+
   it('never crashes on an unknown intent or a missing payload slot', () => {
     const { line } = renderEvent(event({ intent: 'TOTALLY_UNKNOWN_INTENT' }), scenario, 1)
     expect(typeof line).toBe('string')

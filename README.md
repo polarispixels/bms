@@ -6,25 +6,63 @@ Order! is a game that teaches parliamentary procedure through interactive play. 
 
 ## How to play
 
-You're the chair. A scenario hands you an agenda and a room full of characters,
-each playing an archetype — a Stickler who knows the rulebook, a Rambler who
-won't yield the floor, a Drifting Commenter who wanders off-topic, and others —
-and it's your job to keep the meeting moving without losing the room.
+You are the chair. A scenario hands you an agenda and five people who have all
+been to this meeting before, and your job is to get through the business
+without the room deciding it can do this without you.
 
-Every turn you pick an action from a palette built from what's actually legal
-right now: recognize a speaker, entertain a motion, call for a second, open or
-close debate, call the vote, rule on a point of order, or just wait and see
-what happens. Two meters track how you're doing — **Control**, how well the
-room is following the rules, and **Trust**, how much the room believes you're
-being fair — and they move in response to your calls, not just the clock.
-Ruling loosely keeps things friendly but bleeds Control; ruling strictly by
-the book keeps order but can cost Trust if it reads as arbitrary.
+Each turn you pick one action from the palette. The whole vocabulary:
 
-Let either meter run out and the meeting **collapses**: you get a short
-diagnostic on what tipped it over and the option to restore to your last
-checkpoint and try again. Play a scenario through to adjournment instead and
-you get a report card grading how you chaired it. There's no clock and no
-hidden dice against you — every outcome traces back to a ruling you made.
+| | |
+|---|---|
+| **Call the item** | open the meeting, or move on to the next thing on the agenda |
+| **Recognize** | give a member the floor — to move something, second it, or speak |
+| **State the motion** | put the question to the board, which is what makes debate legal |
+| **Rule** | decide a point of order well taken or not well taken |
+| **Answer inquiry** | answer a member's question about procedure, correctly or otherwise |
+| **Call the vote** | by voice, or by roll call |
+| **Announce the result** | say out loud what the board just decided |
+| **Gavel** | quiet an interruption; on a quiet room it just draws attention |
+| **Recess** | a few minutes to let the temperature drop |
+| **Adjourn** | end it |
+| **Wait** | say nothing and see what the room does |
+
+**Practice mode is the default, and it does not tell you what's legal.** Every
+action stays on the palette whether or not it's in order, with no greying out,
+no warnings and no hints — greying out the wrong answers is an answer key. You
+find out the way you'd find out in a real meeting: you try it, and the room
+reacts. Call a vote on a motion you never stated and nothing gets voted on;
+somebody looks up, confused, and the member who knows the rulebook files a
+point of order about it. **Learn mode** is the other setting: it shows only
+the moves that are in order right now, each with the reason it's in order.
+
+The room is five archetypes, and each one is a mechanic rather than a
+decoration. **The Rules Enthusiast** files a point of order every time you skip
+a step, and is almost always right. **The Veteran** wants the floor to explain
+that the board settled this years ago; ignore them long enough and they give up
+in a way everyone notices. **The Interrupter** talks over you, and does it
+sooner the longer you hesitate — passivity is a choice the game charges you
+for. **The Stabilizer** quietly does your job when you flounder, which fixes
+the immediate problem and tells the room who is actually running the meeting.
+**The Drifting Commenter** wanders; gaveling them costs you, and letting them
+run costs you too.
+
+Two meters, both visible. **Control** is whether the room defers to the chair.
+**Trust** is whether it thinks you're fair. They pull against each other, on
+purpose: perfect Control is available to anyone willing to be a tyrant about
+it. Only Control ends the meeting — at zero the room **collapses**, everyone
+talks at once, whatever was on the floor dies, and the gavel stops meaning
+anything. Trust never collapses the meeting on its own; it shows up in how the
+room treats you along the way, and on your report card at the end.
+
+A collapse is not a restart. The game rewinds to your last checkpoint — taken
+at each agenda item and just before each vote — and shows a short diagnostic of
+the two or three things that actually cost you the room, aggregated, so ten
+small hesitations read as the one problem they were.
+
+Get to adjournment and you get a report card: procedure, fairness, efficiency,
+clarity, agenda completion, each with a grade and notes, plus a pedantic list
+of specific moments. No clock, no dice rolling against you — same scenario,
+same seed, same choices, same meeting, every time.
 
 ## Development
 

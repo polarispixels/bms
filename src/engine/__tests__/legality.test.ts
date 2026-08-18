@@ -19,6 +19,7 @@ function makeMotion(partial?: Partial<Motion>): Motion {
     germane: true,
     statedByChair: false,
     debateSpeeches: 0,
+    movedTurn: 1,
     votes: {},
     ...partial,
   }

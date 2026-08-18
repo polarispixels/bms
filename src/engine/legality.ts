@@ -92,7 +92,7 @@ function stateMotionStatus(state: MeetingState): VerbReport {
       if (!top) return outOfOrder('There is no motion on the floor to state.')
       return top.seconded
         ? inOrder('Stating the pending motion for the room.')
-        : outOfOrder('the motion has not been seconded')
+        : outOfOrder('The motion has not been seconded.')
     }
     case 'DEBATE':
       return risky("That motion has already been stated; this would just restate it.")
