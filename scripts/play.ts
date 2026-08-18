@@ -143,8 +143,9 @@ function buildPalette(state: MeetingState, scenario: Scenario, learn: boolean): 
   const report = legalActions(state, scenario)
   const entries = VERB_ORDER.map((verb) => ({ verb, status: report.verbs[verb].status, why: report.verbs[verb].why }))
   // Practice mode (default) shows every verb with no status tell at all.
-  // Learn mode filters out anything OUT_OF_ORDER and shows the why text.
-  return learn ? entries.filter((e) => e.status !== 'OUT_OF_ORDER') : entries
+  // Learn mode shows only verbs that are IN_ORDER right now (not RISKY, not
+  // OUT_OF_ORDER) and explains why with the legality report's `why` text.
+  return learn ? entries.filter((e) => e.status === 'IN_ORDER') : entries
 }
 
 function printPalette(palette: PaletteEntry[], learn: boolean): void {
@@ -155,24 +156,36 @@ function printPalette(palette: PaletteEntry[], learn: boolean): void {
   })
 }
 
-async function pickFromList<T>(items: T[], render: (item: T) => string, prompt: string): Promise<T | null> {
-  if (items.length === 0) {
-    out(`  (nothing available for ${prompt})`)
-    return null
-  }
+// A sub-prompt (picking a target, or the whole action) can end three ways:
+// a real pick, stdin closing (genuine EOF — the session must end), or the
+// list of choices being empty (no target exists — nothing was typed, so
+// this is NOT EOF; the chair just can't do this right now). Conflating the
+// last two would make an empty RULE/ANSWER_INQUIRY target list silently
+// abort the whole session and discard the rest of a piped script.
+type Picked<T> = { kind: 'PICKED'; value: T } | { kind: 'EMPTY' } | { kind: 'EOF' }
+
+async function pickFromList<T>(items: T[], render: (item: T) => string, prompt: string): Promise<Picked<T>> {
+  if (items.length === 0) return { kind: 'EMPTY' }
   items.forEach((item, i) => out(`  ${i + 1}) ${render(item)}`))
   const line = await nextLine()
-  if (line === null) return null
+  if (line === null) return { kind: 'EOF' }
   const n = Number(line.trim())
   if (!Number.isInteger(n) || n < 1 || n > items.length) {
     out(`  Not a valid choice; leaving ${prompt} unset.`)
-    return items[0]
+    return { kind: 'PICKED', value: items[0] }
   }
-  return items[n - 1]
+  return { kind: 'PICKED', value: items[n - 1] }
 }
 
+// Building an action can likewise come back as a real action, a genuine EOF,
+// or EMPTY: the verb needs a target that does not currently exist (no
+// pending point of order, no pending inquiry, nobody present to recognize).
+// EMPTY costs no game turn — the caller prints the notice and re-shows the
+// menu, still reading the same stdin stream.
+type BuildResult = { kind: 'ACTION'; action: Action } | { kind: 'EMPTY'; message: string } | { kind: 'EOF' }
+
 /** Builds the concrete Action for a chosen verb, prompting for any target it needs. */
-async function buildAction(verb: Action['verb'], state: MeetingState, scenario: Scenario): Promise<Action | null> {
+async function buildAction(verb: Action['verb'], state: MeetingState, scenario: Scenario): Promise<BuildResult> {
   switch (verb) {
     case 'CALL_ITEM':
     case 'STATE_MOTION':
@@ -180,61 +193,65 @@ async function buildAction(verb: Action['verb'], state: MeetingState, scenario: 
     case 'GAVEL':
     case 'ADJOURN':
     case 'WAIT':
-      return { verb }
+      return { kind: 'ACTION', action: { verb } }
 
     case 'RECOGNIZE': {
       out('Recognize whom?')
       const targets = legalActions(state, scenario).targets.recognize
-      const target = await pickFromList(targets, (id) => memberName(state, id), 'RECOGNIZE target')
-      if (target === null) return null
-      return { verb: 'RECOGNIZE', target }
+      const picked = await pickFromList(targets, (id) => memberName(state, id), 'RECOGNIZE target')
+      if (picked.kind === 'EMPTY') return { kind: 'EMPTY', message: 'There is nobody present for the chair to recognize.' }
+      if (picked.kind === 'EOF') return { kind: 'EOF' }
+      return { kind: 'ACTION', action: { verb: 'RECOGNIZE', target: picked.value } }
     }
 
     case 'RULE': {
       out('Rule on which point of order?')
       const pending = state.pendingRequests.filter((r) => r.kind === 'POINT_OF_ORDER')
-      const request = await pickFromList(
+      const picked = await pickFromList(
         pending,
         (r) => `${r.id}: ${memberName(state, r.member)} claims "${r.claim ?? ''}"`,
         'RULE target',
       )
-      if (request === null) return null
+      if (picked.kind === 'EMPTY') return { kind: 'EMPTY', message: 'There is no point of order before the chair.' }
+      if (picked.kind === 'EOF') return { kind: 'EOF' }
       out('Ruling? 1) WELL_TAKEN  2) NOT_WELL_TAKEN')
       const rulingLine = await nextLine()
-      if (rulingLine === null) return null
+      if (rulingLine === null) return { kind: 'EOF' }
       const ruling = rulingLine.trim() === '1' ? 'WELL_TAKEN' : 'NOT_WELL_TAKEN'
-      return { verb: 'RULE', target: request.id, ruling }
+      return { kind: 'ACTION', action: { verb: 'RULE', target: picked.value.id, ruling } }
     }
 
     case 'ANSWER_INQUIRY': {
       out('Answer which inquiry?')
       const pending = state.pendingRequests.filter((r) => r.kind === 'INQUIRY')
-      const request = await pickFromList(
+      const picked = await pickFromList(
         pending,
         (r) => `${r.id}: ${memberName(state, r.member)} asks "${r.question ?? ''}"`,
         'ANSWER_INQUIRY target',
       )
-      if (request === null) return null
-      const answers = request.answers ?? []
-      const answer = await pickFromList(answers, (a) => a.text, 'answer')
-      if (answer === null) return null
-      return { verb: 'ANSWER_INQUIRY', target: request.id, answer: answer.id }
+      if (picked.kind === 'EMPTY') return { kind: 'EMPTY', message: 'There is no inquiry before the chair.' }
+      if (picked.kind === 'EOF') return { kind: 'EOF' }
+      const answers = picked.value.answers ?? []
+      const answerPicked = await pickFromList(answers, (a) => a.text, 'answer')
+      if (answerPicked.kind === 'EMPTY') return { kind: 'EMPTY', message: 'The chair has nothing to answer with.' }
+      if (answerPicked.kind === 'EOF') return { kind: 'EOF' }
+      return { kind: 'ACTION', action: { verb: 'ANSWER_INQUIRY', target: picked.value.id, answer: answerPicked.value.id } }
     }
 
     case 'CALL_VOTE': {
       out('Vote method? 1) VOICE  2) ROLL_CALL')
       const line = await nextLine()
-      if (line === null) return null
+      if (line === null) return { kind: 'EOF' }
       const method = line.trim() === '2' ? 'ROLL_CALL' : 'VOICE'
-      return { verb: 'CALL_VOTE', method }
+      return { kind: 'ACTION', action: { verb: 'CALL_VOTE', method } }
     }
 
     case 'RECESS': {
       out('Recess for how many minutes? (number)')
       const line = await nextLine()
-      if (line === null) return null
+      if (line === null) return { kind: 'EOF' }
       const minutes = Number(line.trim())
-      return { verb: 'RECESS', minutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 5 }
+      return { kind: 'ACTION', action: { verb: 'RECESS', minutes: Number.isFinite(minutes) && minutes > 0 ? minutes : 5 } }
     }
   }
 }
@@ -346,14 +363,18 @@ async function main(): Promise<void> {
       continue
     }
 
-    const action = await buildAction(palette[n - 1].verb, state, scenario)
-    if (action === null) {
+    const result = await buildAction(palette[n - 1].verb, state, scenario)
+    if (result.kind === 'EOF') {
       out()
       out(`Session ended at EOF: ${turnsTaken} action(s) taken, meeting still in progress.`)
       break
     }
+    if (result.kind === 'EMPTY') {
+      out(result.message)
+      continue // no target existed to act on; no turn taken, keep reading input
+    }
 
-    state = reduce(state, action, scenario)
+    state = reduce(state, result.action, scenario)
     turnsTaken += 1
     renderNew(state)
   }
