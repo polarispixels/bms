@@ -62,6 +62,6 @@ export function isDebatable(m: Motion): boolean {
  * Returns the vote threshold for a motion.
  * MVP: all motions require majority.
  */
-export function voteThreshold(m: Motion): 'MAJORITY' {
+export function voteThreshold(_m: Motion): 'MAJORITY' {
   return 'MAJORITY'
 }
