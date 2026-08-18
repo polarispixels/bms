@@ -17,7 +17,7 @@
 // speaks in sequence instead of dumping a turn's worth of prose at once. The
 // palette is disabled while the queue drains.
 
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import {
   buildReportCard,
   initMeeting,
@@ -54,8 +54,18 @@ type Session = {
   state: MeetingState
   /** Presentation RNG — never the engine's. */
   presentRng: number
-  /** Every event id already turned into a line; keeps restores from replaying. */
+  /**
+   * Event ids already turned into a line, so an event is rendered exactly once.
+   *
+   * Scoped to the *current* log, not to all of history: `restoreCheckpoint`
+   * rewinds `eventSeq` along with everything else, so after a rewind the engine
+   * legitimately reissues ids it has used before. Carrying a stale set across a
+   * restore would suppress every subsequent event and silence the transcript
+   * for the rest of the meeting — see the RESTORE case.
+   */
   renderedIds: Set<string>
+  /** Next transcript sequence number; the React key for a Line. */
+  lineSeq: number
   /** Lines the player can see. */
   lines: Line[]
   /** Lines waiting their turn to appear. */
@@ -80,6 +90,7 @@ function speakerName(state: MeetingState, actor: MeetingEvent['actor']): string 
  */
 function ingest(session: Session, next: MeetingState): Session {
   let presentRng = session.presentRng
+  let lineSeq = session.lineSeq
   const renderedIds = new Set(session.renderedIds)
   const fresh: Line[] = []
 
@@ -89,6 +100,7 @@ function ingest(session: Session, next: MeetingState): Session {
     presentRng = rendered.rngState
     renderedIds.add(event.id)
     fresh.push({
+      seq: lineSeq++,
       id: event.id,
       text: rendered.line,
       type: event.type,
@@ -102,6 +114,7 @@ function ingest(session: Session, next: MeetingState): Session {
     state: next,
     presentRng,
     renderedIds,
+    lineSeq,
     queue: [...session.queue, ...fresh],
   }
 }
@@ -117,6 +130,7 @@ function startSession(choice: SetupChoice): Session {
       state,
       presentRng: choice.seed,
       renderedIds: new Set<string>(),
+      lineSeq: 0,
       lines: [],
       queue: [],
     },
@@ -145,16 +159,30 @@ function sessionReducer(session: Session | null, msg: Msg): Session | null {
       if (!session) return session
       const { state } = restoreCheckpoint(session.state)
       const checkpoint = session.state.checkpoints[session.state.checkpoints.length - 1]
-      // The restored log was narrated once already; `ingest` filters it out by
-      // event id. All the transcript gains is a rule marking the rewind.
+
+      // A rewind moves `eventSeq` back with everything else, so from here the
+      // engine will reissue ids the transcript has already shown (restoring a
+      // checkpoint taken at eventSeq 7 out of 27 means the next event is `e8`
+      // again). Rebasing the cache on the restored log is what keeps the
+      // transcript alive: the entries still in that log were narrated already
+      // and stay suppressed, and every id the engine can issue from here is
+      // above them, so nothing new is ever wrongly skipped. Carrying the old
+      // set forward would swallow every subsequent event for the rest of the
+      // meeting.
+      const rebased: Session = {
+        ...session,
+        renderedIds: new Set(state.log.map((event) => event.id)),
+        lineSeq: session.lineSeq + 1, // reserve this one for the marker
+      }
       const marker: Line = {
-        id: `restore-${session.lines.length + session.queue.length}-${state.turn}`,
+        seq: session.lineSeq,
+        id: `restore-${session.lineSeq}`,
         text: `The chair takes it up again: ${checkpoint?.label ?? 'the last clean moment'}.`,
         type: 'NARRATION',
         intent: 'RESTORE_CHECKPOINT',
         speaker: null,
       }
-      const ingested = ingest(session, state)
+      const ingested = ingest(rebased, state)
       return { ...ingested, queue: [marker, ...ingested.queue] }
     }
 
@@ -168,6 +196,9 @@ function sessionReducer(session: Session | null, msg: Msg): Session | null {
 
 export function App() {
   const [session, dispatch] = useReducer(sessionReducer, null)
+  // Remembered across a return to Setup, so "Change setup" and "Leave the
+  // meeting" come back to the choices the player made rather than the defaults.
+  const [lastChoice, setLastChoice] = useState<SetupChoice | null>(null)
 
   // Drain the queue one line at a time so a turn plays out rather than lands.
   useEffect(() => {
@@ -177,7 +208,16 @@ export function App() {
   }, [session])
 
   if (!session) {
-    return <Setup scenarios={scenarios} onStart={(choice) => dispatch({ type: 'START', choice })} />
+    return (
+      <Setup
+        scenarios={scenarios}
+        initial={lastChoice ?? undefined}
+        onStart={(choice) => {
+          setLastChoice(choice)
+          dispatch({ type: 'START', choice })
+        }}
+      />
+    )
   }
 
   const { state, scenario } = session

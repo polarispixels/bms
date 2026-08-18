@@ -10,7 +10,17 @@ import { useEffect, useRef } from 'react'
 import type { MeetingEvent } from '../engine/index'
 
 export type Line = {
-  /** Event id, or a synthetic `restore-*` id for UI-authored interjections. */
+  /**
+   * UI-side monotonic sequence number. This — not `id` — is the React key:
+   * `restoreCheckpoint` rewinds the engine's `eventSeq`, so a restored meeting
+   * legitimately reissues event ids the transcript has already shown, and
+   * keying on `id` would collide.
+   */
+  seq: number
+  /**
+   * Event id, or a synthetic `restore-*` id for UI-authored interjections.
+   * Purely a render-once cache token; never a React key.
+   */
   id: string
   text: string
   type: MeetingEvent['type']
@@ -58,7 +68,7 @@ export function Transcript({ lines, title, body }: TranscriptProps) {
       <ol className="lines">
         {lines.map((line) => (
           <li
-            key={line.id}
+            key={line.seq}
             className={STAGE_TYPES.includes(line.type) ? 'line line-stage' : 'line'}
             data-intent={line.intent}
           >

@@ -38,7 +38,7 @@ export function CollapseModal({
 
         <ul className="chaos">
           {chaos.map((line) => (
-            <li key={line.id}>{line.text}</li>
+            <li key={line.seq}>{line.text}</li>
           ))}
         </ul>
 
