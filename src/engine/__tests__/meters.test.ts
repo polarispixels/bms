@@ -111,6 +111,7 @@ describe('meters', () => {
       turn: 5,
       log: [],
       rngState: 0,
+      eventSeq: 0,
       meterLog: [],
       checkpoints: [],
       currentVote: null,

@@ -307,6 +307,45 @@ describe('ANNOUNCE_RESULT', () => {
     expect(s.meters.control).toBe(73)
   })
 
+  it('withholds CLEAN_PROCEDURE_BONUS when there is no record of the vote being taken', () => {
+    // A VOTING state with no VOTE_TAKEN event in the log: the bonus rewards a
+    // demonstrably prompt announcement, so with no evidence it fails closed.
+    const state = makeState({
+      phase: 'VOTING',
+      motionStack: [makeMotion()],
+      currentVote: { method: 'VOICE', ayes: 3, noes: 1, abstains: 1, passed: true, motionId: FIXTURE_MOTION_ID, announced: false },
+    })
+    const after = reduce(state, { verb: 'ANNOUNCE_RESULT' }, scenario)
+    expect(reasons(after)).not.toContain('CLEAN_PROCEDURE_BONUS')
+    expect(after.phase).toBe('ITEM_OPEN')
+  })
+
+  it('counts the item once even when a second main motion is taken up on it', () => {
+    let s = reduce(debateState(), { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+    s = reduce(s, { verb: 'ANNOUNCE_RESULT' }, scenario)
+    expect(s.itemsCompleted).toBe(1)
+
+    // Same item, a second main motion, moved / seconded / stated / voted.
+    s = withRequests(s, [moveRequest('m3', s.turn)])
+    s = reduce(s, { verb: 'RECOGNIZE', target: 'm3' }, scenario)
+    s = second(s, 'm4')
+    s = reduce(s, { verb: 'STATE_MOTION' }, scenario)
+    s = reduce(s, { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+    s = reduce(s, { verb: 'ANNOUNCE_RESULT' }, scenario)
+
+    expect(s.currentItem).toBe(0)
+    expect(s.itemsCompleted).toBe(1)
+  })
+
+  it('clears the previous item vote when the next item opens', () => {
+    let s = reduce(debateState({ agenda: makeState().agenda }), { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+    s = reduce(s, { verb: 'ANNOUNCE_RESULT' }, scenario)
+    expect(s.currentVote).not.toBeNull()
+    s = reduce(s, { verb: 'CALL_ITEM' }, scenario)
+    expect(s.currentItem).toBe(1)
+    expect(s.currentVote).toBeNull()
+  })
+
   it('withholds CLEAN_PROCEDURE_BONUS when the chair dawdles a turn first', () => {
     let s = reduce(debateState(), { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
     s = reduce(s, { verb: 'WAIT' }, scenario)
@@ -519,12 +558,47 @@ describe('RECESS and CALL_ITEM resume', () => {
     expect(after.meters.trust).toBe(67)
   })
 
-  it('resumes to ITEM_OPEN on the current item with the motion stack preserved', () => {
-    const state = makeState({ phase: 'RECESS', currentItem: 0, motionStack: [makeMotion()] })
+  it('resumes to ITEM_OPEN on the current item when nothing is pending', () => {
+    const state = makeState({ phase: 'RECESS', currentItem: 0, motionStack: [] })
     const after = reduce(state, { verb: 'CALL_ITEM' }, scenario)
     expect(after.phase).toBe('ITEM_OPEN')
     expect(after.currentItem).toBe(0)
+  })
+
+  it('resumes to DEBATE when a stated, seconded motion is still on the floor', () => {
+    const state = makeState({ phase: 'RECESS', currentItem: 0, motionStack: [makeMotion()] })
+    const after = reduce(state, { verb: 'CALL_ITEM' }, scenario)
+    expect(after.phase).toBe('DEBATE')
+    expect(after.currentItem).toBe(0)
     expect(after.motionStack).toHaveLength(1)
+  })
+
+  it('resumes to MOTION_PENDING when the motion is not yet stated or seconded', () => {
+    const unstated = makeState({ phase: 'RECESS', motionStack: [makeMotion({ statedByChair: false })] })
+    expect(reduce(unstated, { verb: 'CALL_ITEM' }, scenario).phase).toBe('MOTION_PENDING')
+
+    const unseconded = makeState({
+      phase: 'RECESS',
+      motionStack: [makeMotion({ seconded: false, secondedBy: null })],
+    })
+    expect(reduce(unseconded, { verb: 'CALL_ITEM' }, scenario).phase).toBe('MOTION_PENDING')
+  })
+
+  it('leaves the vote completable after a recess taken mid-debate', () => {
+    let s = debateState()
+    s = reduce(s, { verb: 'RECESS', minutes: 10 }, scenario)
+    expect(s.phase).toBe('RECESS')
+
+    s = reduce(s, { verb: 'CALL_ITEM' }, scenario)
+    expect(s.phase).toBe('DEBATE')
+    expect(s.motionStack[0]).toMatchObject({ statedByChair: true, seconded: true, text: FIXTURE_MOTION_TEXT })
+
+    s = reduce(s, { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+    expect(s.phase).toBe('VOTING')
+    s = reduce(s, { verb: 'ANNOUNCE_RESULT' }, scenario)
+    expect(s.phase).toBe('ITEM_OPEN')
+    expect(s.itemsCompleted).toBe(1)
+    expect(s.outOfOrderCount).toBe(0)
   })
 })
 
@@ -574,7 +648,33 @@ describe('checkpoints', () => {
     expect(s.checkpoints[0].label).toContain(FIXTURE_ITEM_TITLE)
     expect(s.checkpoints[0].state.phase).toBe('ITEM_OPEN')
     expect(s.checkpoints[0].state.checkpoints).toEqual([])
-    expect(s.checkpoints[0].turn).toBe(1)
+  })
+
+  it('captures the item-advance boundary when moving to the next item', () => {
+    // Two-item agenda, item 1 resolved: CALL_ITEM advances to index 1.
+    const before = makeState({ phase: 'ITEM_OPEN', currentItem: 0, itemsCompleted: 1 })
+    const after = reduce(before, { verb: 'CALL_ITEM' }, scenario)
+    expect(after.currentItem).toBe(1)
+    expect(after.checkpoints).toHaveLength(1)
+    expect(after.checkpoints[0].label).toBe('Item 2: Fence variance request opened')
+    expect(after.checkpoints[0].state.currentItem).toBe(1)
+    expect(after.checkpoints[0].state.phase).toBe('ITEM_OPEN')
+  })
+
+  it('gives every checkpoint the same meaning: the turn it will replay', () => {
+    // Item boundary: the CALL_ITEM of turn 1 is already applied, so the
+    // snapshot is poised to take turn 2.
+    const item = reduce(initMeeting(scenario, 3), { verb: 'CALL_ITEM' }, scenario)
+    expect(item.checkpoints[0].turn).toBe(2)
+    expect(item.checkpoints[0].state.turn).toBe(2)
+    expect(item.turn).toBe(2)
+
+    // Pre-vote boundary: captured before the vote is applied, so the snapshot
+    // is poised to retake the very turn the chair just spent.
+    const vote = reduce(debateState({ turn: 6 }), { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+    expect(vote.checkpoints[0].turn).toBe(6)
+    expect(vote.checkpoints[0].state.turn).toBe(6)
+    expect(vote.checkpoints[0].state.phase).toBe('DEBATE')
   })
 
   it('does not capture when merely returning to ITEM_OPEN on the same item', () => {
@@ -660,6 +760,44 @@ describe('purity', () => {
     reduce(state, { verb: 'RECOGNIZE', target: 'm2' }, scenario)
     reduce(state, { verb: 'WAIT' }, scenario)
     expect(state).toEqual(snapshot)
+  })
+})
+
+describe('event ids', () => {
+  it('are unique and monotonic across a meeting', () => {
+    const s = run(initMeeting(scenario, 5), [
+      { verb: 'CALL_ITEM' },
+      { verb: 'WAIT' },
+      { verb: 'GAVEL' },
+      { verb: 'CALL_VOTE', method: 'VOICE' },
+      { verb: 'RECESS', minutes: 5 },
+    ])
+    const ids = s.log.map((e) => e.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toEqual(ids.map((_, i) => `e${i + 1}`))
+    expect(s.eventSeq).toBe(ids.length)
+  })
+
+  it('do not collide with live ids after resuming from a truncated checkpoint', () => {
+    const log: MeetingEvent[] = Array.from({ length: 30 }, (_, i) => ({
+      id: `e${i + 1}`,
+      type: 'NARRATION' as const,
+      actor: 'SYSTEM' as const,
+      intent: 'FILLER',
+      payload: {},
+    }))
+    const s = reduce(debateState({ log, eventSeq: 30 }), { verb: 'CALL_VOTE', method: 'VOICE' }, scenario)
+
+    // The snapshot keeps only the last 20 events but carries the counter, so a
+    // resumed meeting keeps issuing fresh ids instead of reusing e21 onward.
+    const resumed = s.checkpoints[0].state
+    expect(resumed.log).toHaveLength(20)
+    expect(resumed.eventSeq).toBe(30)
+
+    const next = reduce(resumed, { verb: 'WAIT' }, scenario)
+    const fresh = latestEvents(resumed, next).map((e) => e.id)
+    expect(fresh).toEqual(['e31'])
+    expect(log.map((e) => e.id)).not.toContain('e31')
   })
 })
 

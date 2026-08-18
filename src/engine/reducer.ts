@@ -53,6 +53,12 @@ function beginDraft(state: MeetingState): MeetingState {
   return { ...structuredClone(rest), checkpoints }
 }
 
+/**
+ * Appends an event with a monotonic, deterministic id. The counter lives on
+ * state (never `log.length`) because checkpoint snapshots truncate the log to
+ * its last 20 entries — a length-derived id would collide with live ids the
+ * moment a checkpoint was restored.
+ */
 function emit(
   draft: MeetingState,
   type: MeetingEvent['type'],
@@ -60,7 +66,8 @@ function emit(
   intent: string,
   payload: Record<string, unknown> = {},
 ): void {
-  draft.log.push({ id: `e${draft.log.length + 1}`, type, actor, intent, payload })
+  draft.eventSeq += 1
+  draft.log.push({ id: `e${draft.eventSeq}`, type, actor, intent, payload })
 }
 
 function presentMembers(draft: MeetingState): Member[] {
@@ -92,6 +99,16 @@ function currentItemTitle(draft: MeetingState): string {
 // Checkpoints (D10 capture; restore lands in Task 6's checkpoints.ts)
 // ---------------------------------------------------------------------------
 
+/**
+ * Snapshots the draft as a restore point.
+ *
+ * Consistent semantics for every boundary: **a checkpoint holds a state that is
+ * poised to take a turn.** `checkpoint.turn` and `snapshot.state.turn` are the
+ * turn number that will be played when the checkpoint is restored, never a turn
+ * whose action is already baked into the snapshot. Callers must therefore
+ * capture either before applying the turn's action (the pre-vote boundary) or
+ * after `turn += 1` (the item boundary).
+ */
 function captureCheckpoint(draft: MeetingState, label: string): void {
   const { checkpoints: _ignored, ...rest } = draft
   const snapshot: MeetingState = { ...structuredClone(rest), checkpoints: [] }
@@ -137,6 +154,7 @@ export function initMeeting(scenario: Scenario, seed: number): MeetingState {
     log: [],
 
     rngState: seed,
+    eventSeq: 0,
     meterLog: [],
     checkpoints: [],
     currentVote: null,
@@ -179,6 +197,8 @@ function openItem(draft: MeetingState, index: number): void {
   draft.currentItem = index
   draft.phase = 'ITEM_OPEN'
   draft.floorHolder = null
+  // The previous item's vote belongs to the previous item.
+  draft.currentVote = null
   emit(draft, 'STATE_CHANGE', 'CHAIR', 'OPEN_ITEM', {
     itemIndex: index,
     itemTitle: draft.agenda[index]?.title ?? '',
@@ -190,6 +210,13 @@ function openItem(draft: MeetingState, index: number): void {
   })
 }
 
+/** The phase the pending business implies: what the room is actually doing. */
+function phaseForStack(draft: MeetingState): MeetingState['phase'] {
+  const top = topMotion(draft.motionStack)
+  if (!top) return 'ITEM_OPEN'
+  return top.statedByChair && top.seconded ? 'DEBATE' : 'MOTION_PENDING'
+}
+
 /** Returns the index of a newly opened item, or null when none was opened. */
 function applyCallItem(draft: MeetingState): number | null {
   if (draft.phase === 'PRE_MEETING') {
@@ -199,11 +226,14 @@ function applyCallItem(draft: MeetingState): number | null {
   }
 
   if (draft.phase === 'RECESS') {
-    // MVP: resume at ITEM_OPEN on the current item; the motion stack survives.
-    draft.phase = 'ITEM_OPEN'
+    // Resume where the room actually left off. Returning unconditionally to
+    // ITEM_OPEN would strand a stated motion: nothing can put a stated motion
+    // back into DEBATE, so the vote could never be taken.
+    draft.phase = phaseForStack(draft)
     emit(draft, 'STATE_CHANGE', 'CHAIR', 'RESUME_FROM_RECESS', {
       itemTitle: currentItemTitle(draft),
-      phase: 'ITEM_OPEN',
+      motionText: topMotion(draft.motionStack)?.text ?? '',
+      phase: draft.phase,
     })
     return null
   }
@@ -460,14 +490,20 @@ function applyAnnounceResult(draft: MeetingState): MeetingState {
   })
 
   let next = draft
+  // No evidence of when the vote was taken means no bonus: the reward is for a
+  // demonstrably prompt announcement, so it fails closed.
   const taken = voteTurn(next, popped.id)
-  const prompt = taken === null || next.turn - taken <= 1
-  if (popped.statedByChair && prompt) {
+  if (popped.statedByChair && taken !== null && next.turn - taken <= 1) {
     next = applyDelta(next, 'CLEAN_PROCEDURE_BONUS')
   }
 
   if (next.motionStack.length === 0) {
-    next.itemsCompleted += 1
+    // itemsCompleted counts *items*, not emptied stacks: a second main motion
+    // on the same item must not advance it twice (legality reads this field to
+    // decide whether CALL_ITEM and ADJOURN are in order).
+    if (next.itemsCompleted <= next.currentItem) {
+      next.itemsCompleted = next.currentItem + 1
+    }
     next.phase = 'ITEM_OPEN'
     emit(next, 'STATE_CHANGE', 'CHAIR', 'ITEM_RESOLVED', {
       itemIndex: next.currentItem,
@@ -476,7 +512,7 @@ function applyAnnounceResult(draft: MeetingState): MeetingState {
     })
   } else {
     // An amendment came off the top; the underlying motion is live again.
-    next.phase = topMotion(next.motionStack)?.statedByChair ? 'DEBATE' : 'MOTION_PENDING'
+    next.phase = phaseForStack(next)
   }
   return next
 }
@@ -660,12 +696,15 @@ export function reduce(state: MeetingState, action: Action, scenario: Scenario):
     applyCollapse(draft)
   }
 
-  // (5b) D10: a new agenda item is a checkpoint boundary.
+  // (6)
+  draft.turn += 1
+
+  // (5b) D10: a new agenda item is a checkpoint boundary. Captured *after* the
+  // turn counter advances, so the snapshot is poised to take the next turn —
+  // the same meaning the pre-vote checkpoint has (see captureCheckpoint).
   if (openedItem !== null && draft.phase !== 'COLLAPSED') {
     captureCheckpoint(draft, `Item ${openedItem + 1}: ${draft.agenda[openedItem]?.title ?? ''} opened`)
   }
 
-  // (6)
-  draft.turn += 1
   return draft
 }

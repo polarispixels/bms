@@ -1,9 +1,10 @@
 // renderEvent: MeetingEvent -> one display line.
 //
-// D8's rendering rule: a member actor's line comes from that member's
-// `lines[intent]` variants, anything else (CHAIR/CLERK/AUDIENCE/SYSTEM) from
-// `scenario.lines[intent]`, picked with the seeded RNG so the same seed always
-// narrates the same way. `{slot}` tokens are filled from the event payload.
+// D8's rendering rule, with the authored-content fallback chain:
+//   member actor: member.lines[intent] -> scenario.lines[intent] -> built-in
+//   everyone else (CHAIR/CLERK/AUDIENCE/SYSTEM): scenario.lines[intent] -> built-in
+// Variants are picked with the seeded RNG so the same seed always narrates the
+// same way. `{slot}` tokens are filled from the event payload.
 //
 // Missing content must never crash the game, so every intent the engine can
 // emit has a neutral built-in line here, and anything unrecognised still gets
@@ -108,8 +109,11 @@ export function renderEvent(
   scenario: Scenario,
   rngState: number,
 ): { line: string; rngState: number } {
+  // Member actors prefer their own voice, then the scenario's shared lines for
+  // that intent (so an author can write a common line once), then the built-in.
   const member = findMember(scenario, event.actor)
-  const variants = (member ? member.lines[event.intent] : scenario.lines[event.intent]) ?? []
+  const authored = member?.lines[event.intent] ?? scenario.lines[event.intent]
+  const variants = authored ?? []
 
   let template: string
   let nextRngState = rngState

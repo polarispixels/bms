@@ -49,6 +49,7 @@ export function makeState(partial?: Partial<MeetingState>): MeetingState {
     log: [],
 
     rngState: 1,
+    eventSeq: 0,
     meterLog: [],
     checkpoints: [],
     currentVote: null,

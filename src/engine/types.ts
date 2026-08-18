@@ -151,6 +151,13 @@ export type MeetingState = {
 
   // D2 additions:
   rngState: number
+  /**
+   * Monotonic event counter. Event ids are `e{eventSeq}` taken from this, not
+   * from `log.length`: checkpoint snapshots truncate `log` to its last 20
+   * entries (D10), so a length-derived id would start reissuing ids that
+   * already exist once a checkpoint is restored.
+   */
+  eventSeq: number
   meterLog: MeterDelta[]
   checkpoints: Checkpoint[]
   currentVote: VoteTally | null

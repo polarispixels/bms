@@ -85,6 +85,8 @@ export function fixtureScenario(): Scenario {
     lines: {
       CALL_TO_ORDER: ['The chair calls the meeting to order.'],
       READ_ITEM: ['Next on the agenda: {itemTitle}.'],
+      // A shared line any member without their own SECOND variant falls back to.
+      SECOND: ['{memberName} seconds it.'],
     },
   }
   return validateScenario(raw)

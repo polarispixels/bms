@@ -25,6 +25,21 @@ describe('renderEvent', () => {
     expect(line).toContain('Member One')
   })
 
+  it('falls back from a member with no line of their own to the shared scenario line', () => {
+    const { line } = renderEvent(event({ type: 'SPEECH', actor: 'm2', intent: 'SECOND' }), scenario, 1)
+    expect(line).toBe('Member Two seconds it.')
+  })
+
+  it('prefers a member own line over the shared scenario line', () => {
+    // m1 authors MOVE; the scenario does not, so this also pins the ordering.
+    const { line } = renderEvent(
+      event({ type: 'SPEECH', actor: 'm1', intent: 'MOVE', payload: { motionText: 'it be so' } }),
+      scenario,
+      1,
+    )
+    expect(line).toBe('I move that it be so.')
+  })
+
   it('renders non-member actors from scenario.lines', () => {
     const { line } = renderEvent(event({ actor: 'CHAIR', intent: 'CALL_TO_ORDER' }), scenario, 1)
     expect(line).toBe('The chair calls the meeting to order.')
