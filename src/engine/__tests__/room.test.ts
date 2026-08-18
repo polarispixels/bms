@@ -418,6 +418,74 @@ describe('STABILIZER', () => {
     // no longer starved of a scene: Dee (m3) erupts during the stall.
     expect(state.log.some((e) => e.type === 'INTERRUPT' && e.actor === 'm3')).toBe(true)
   })
+
+  it('still sits out its cooldown when it is checked BEFORE the interrupter in member order', () => {
+    // The test above uses the shared `scenario` fixture, where m3 (INTERRUPTER)
+    // precedes m4 (STABILIZER) in the members array — `runArchetypes` iterates
+    // in array order, so the interrupter always gets first crack at the turn's
+    // one scene there regardless of whether the cooldown works. That fixture
+    // alone would pass even with the cooldown reverted, so it does not pin the
+    // real bug: in the actual scenario (hoa-fence-01), Ruth (STABILIZER) is
+    // ordered BEFORE Dee (INTERRUPTER). This fixture reproduces that ordering
+    // to prove the cooldown — not iteration order — is what frees the scene.
+    const orderByMember = { m1: 'STABILIZER', m2: 'NONE', m3: 'NONE', m4: 'INTERRUPTER', m5: 'NONE' } as const
+    const orderedScenario = validateScenario({
+      id: 'room-fixture-stabilizer-first',
+      title: 'Room Fixture Meeting (stabilizer ordered before interrupter)',
+      body: 'Fixture Homeowners Association',
+      version: '1.0.0',
+      seats: 5,
+      quorum: 3,
+      present: ['m1', 'm2', 'm3', 'm4', 'm5'],
+      parTurns: 10,
+      members: Object.entries(orderByMember).map(([id, archetype]) => ({
+        id,
+        name: `Member ${id.toUpperCase()}`,
+        archetype,
+        objective: 'Be themselves.',
+        stances: { [MOTION_ID]: 'AYE' },
+        lines: {},
+      })),
+      agenda: [
+        {
+          id: 'item-plain',
+          title: 'Approve the minutes',
+          motions: [{ id: MOTION_ID, kind: 'MAIN', text: MOTION_TEXT, germane: true }],
+        },
+      ],
+      beats: [],
+      lines: {},
+    })
+
+    const base = makeState()
+    let state: MeetingState = {
+      ...base,
+      members: base.members.map((m) => ({
+        ...m,
+        archetype: orderByMember[m.id as keyof typeof orderByMember],
+      })),
+      agenda: orderedScenario.agenda,
+      phase: 'MOTION_PENDING',
+      turn: 3,
+      motionStack: [makeMotion({ seconded: false, secondedBy: null, statedByChair: false })],
+      log: [movedEvent(1)],
+    }
+
+    for (let i = 0; i < 4; i++) {
+      state = reduce(state, { verb: 'WAIT' }, orderedScenario)
+    }
+
+    // (a) Exactly one rescue in the first 3 turns of the stall (turns 3-5):
+    // the cooldown set by the turn-3 rescue blocks turns 4 and 5, even though
+    // m1 (STABILIZER) is checked before m4 (INTERRUPTER) every turn.
+    const rescuesInFirstThreeTurns = state.meterLog.filter(
+      (d) => d.reason === 'STABILIZER_RESCUE' && d.turn <= 5,
+    )
+    expect(rescuesInFirstThreeTurns).toHaveLength(1)
+
+    // (b) The later-ordered interrupter (m4) still gets a scene and erupts.
+    expect(state.log.some((e) => e.type === 'INTERRUPT' && e.actor === 'm4')).toBe(true)
+  })
 })
 
 // ---------------------------------------------------------------------------
