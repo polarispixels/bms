@@ -386,6 +386,7 @@ function applyCallVote(draft: MeetingState, method: VoteTally['method']): Meetin
     motionId: top.id,
     motionText: top.text,
     method,
+    statedByChair: top.statedByChair,
     ayes: next.currentVote.ayes,
     noes: next.currentVote.noes,
     abstains: next.currentVote.abstains,
@@ -424,6 +425,7 @@ function applyAnnounceResult(draft: MeetingState): MeetingState {
   draft.currentVote = { ...vote, announced: true }
   draft.floorHolder = null
 
+  const voteTakenTurn = voteTurn(draft, popped.id)
   emit(draft, 'VOTE_RESULT', 'CHAIR', 'ANNOUNCE_RESULT', {
     motionId: popped.id,
     motionText: popped.text,
@@ -432,6 +434,7 @@ function applyAnnounceResult(draft: MeetingState): MeetingState {
     abstains: vote.abstains,
     passed: vote.passed,
     result: vote.passed ? 'carried' : 'lost',
+    voteTakenTurn: voteTakenTurn ?? 0,
   })
 
   let next = draft

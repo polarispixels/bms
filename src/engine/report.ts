@@ -50,50 +50,42 @@ function scoreEfficiency(state: MeetingState, scenario: Scenario): number {
   return Math.max(0, 100 - 4 * overPar)
 }
 
-function countAnnounceDelays(state: MeetingState): number {
-  const callVoteEvents = new Map<string, number>() // motionId -> turn of CALL_VOTE
-  let announceDelaysCount = 0
+/** Counts both unstated motions and announce delays from the log. */
+function countClarityPenalties(state: MeetingState): { unstatedMotions: number; announceDelays: number } {
+  let unstatedMotions = 0
+  let announceDelays = 0
+  const votesTaken = new Map<string, number>() // motionId -> turn of VOTE_TAKEN
 
   for (const event of state.log) {
-    if (event.intent === 'CALL_VOTE') {
+    if (event.intent === 'VOTE_TAKEN') {
       const motionId = event.payload.motionId as string
-      callVoteEvents.set(motionId, event.payload.turn as number)
+      const statedByChair = event.payload.statedByChair as boolean
+      const turn = event.payload.turn as number
+
+      if (!statedByChair) {
+        unstatedMotions++
+      }
+      votesTaken.set(motionId, turn)
     } else if (event.intent === 'ANNOUNCE_RESULT') {
       const motionId = event.payload.motionId as string
-      const callVoteTurn = callVoteEvents.get(motionId)
-      if (callVoteTurn !== undefined) {
-        const delay = (event.payload.turn as number) - callVoteTurn
+      const voteTakenTurn = votesTaken.get(motionId)
+      if (voteTakenTurn !== undefined) {
+        const voteTakenTurnFromPayload = event.payload.voteTakenTurn as number
+        const announceTurn = event.payload.turn as number
+        // Use payload value if available (more reliable), else fallback to tracked turn
+        const delay = announceTurn - (voteTakenTurnFromPayload || voteTakenTurn)
         if (delay > 1) {
-          announceDelaysCount++
+          announceDelays++
         }
       }
     }
   }
 
-  return announceDelaysCount
-}
-
-function countUnstatedMotions(state: MeetingState): number {
-  // Per binding notes: unstated motions cannot enter DEBATE via normal path.
-  // Count from meterLog evidence. For now, we use announce delay-related issues
-  // or look at log entries for evidence. This is a conservative count.
-  let unstatedCount = 0
-  for (const event of state.log) {
-    if (
-      event.intent === 'CALL_VOTE' &&
-      event.actor === 'CHAIR' &&
-      event.payload.motionId &&
-      !event.payload.statedByChair
-    ) {
-      unstatedCount++
-    }
-  }
-  return unstatedCount
+  return { unstatedMotions, announceDelays }
 }
 
 function scoreClarity(state: MeetingState): number {
-  const unstatedMotions = countUnstatedMotions(state)
-  const announceDelays = countAnnounceDelays(state)
+  const { unstatedMotions, announceDelays } = countClarityPenalties(state)
   return Math.max(0, 100 - 10 * unstatedMotions - 5 * announceDelays)
 }
 
@@ -179,8 +171,7 @@ function notesForEfficiency(state: MeetingState, scenario: Scenario, score: numb
 function notesForClarity(state: MeetingState, score: number): string[] {
   const notes: string[] = []
 
-  const unstatedMotions = countUnstatedMotions(state)
-  const announceDelays = countAnnounceDelays(state)
+  const { unstatedMotions, announceDelays } = countClarityPenalties(state)
 
   if (unstatedMotions === 0 && announceDelays === 0) {
     notes.push('All motions were properly stated and vote results announced promptly.')

@@ -190,6 +190,142 @@ describe('buildReportCard', () => {
       expect(report.grades.clarity.score).toBe(100)
       expect(report.grades.clarity.grade).toBe('A')
     })
+
+    it('penalizes unstated motions: VOTE_TAKEN with statedByChair: false', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 95 },
+        outOfOrderCount: 0,
+        meterLog: [],
+        itemsCompleted: 2,
+        turn: 11,
+        log: [
+          {
+            id: 'e1',
+            type: 'STATE_CHANGE',
+            actor: 'CHAIR',
+            intent: 'VOTE_TAKEN',
+            payload: {
+              motionId: 'motion-1',
+              motionText: 'test motion',
+              method: 'VOICE' as const,
+              statedByChair: false,
+              ayes: 3,
+              noes: 1,
+              abstains: 1,
+              turn: 5,
+            },
+          },
+        ],
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      // 100 - 10*1 = 90
+      expect(report.grades.clarity.score).toBe(90)
+      expect(report.grades.clarity.grade).toBe('A')
+    })
+
+    it('penalizes announce delays: VOTE_TAKEN at turn T, ANNOUNCE_RESULT at turn T+2', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 95 },
+        outOfOrderCount: 0,
+        meterLog: [],
+        itemsCompleted: 2,
+        turn: 11,
+        log: [
+          {
+            id: 'e1',
+            type: 'STATE_CHANGE',
+            actor: 'CHAIR',
+            intent: 'VOTE_TAKEN',
+            payload: {
+              motionId: 'motion-1',
+              motionText: 'test motion',
+              method: 'VOICE' as const,
+              statedByChair: true,
+              ayes: 3,
+              noes: 1,
+              abstains: 1,
+              turn: 5,
+            },
+          },
+          {
+            id: 'e2',
+            type: 'VOTE_RESULT',
+            actor: 'CHAIR',
+            intent: 'ANNOUNCE_RESULT',
+            payload: {
+              motionId: 'motion-1',
+              motionText: 'test motion',
+              ayes: 3,
+              noes: 1,
+              abstains: 1,
+              passed: true,
+              result: 'carried',
+              voteTakenTurn: 5,
+              turn: 7,
+            },
+          },
+        ],
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      // 100 - 5*1 = 95
+      expect(report.grades.clarity.score).toBe(95)
+      expect(report.grades.clarity.grade).toBe('A')
+    })
+
+    it('combines both penalties: unstated + announce delay', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 95 },
+        outOfOrderCount: 0,
+        meterLog: [],
+        itemsCompleted: 2,
+        turn: 11,
+        log: [
+          {
+            id: 'e1',
+            type: 'STATE_CHANGE',
+            actor: 'CHAIR',
+            intent: 'VOTE_TAKEN',
+            payload: {
+              motionId: 'motion-1',
+              motionText: 'test motion',
+              method: 'VOICE' as const,
+              statedByChair: false,
+              ayes: 3,
+              noes: 1,
+              abstains: 1,
+              turn: 5,
+            },
+          },
+          {
+            id: 'e2',
+            type: 'VOTE_RESULT',
+            actor: 'CHAIR',
+            intent: 'ANNOUNCE_RESULT',
+            payload: {
+              motionId: 'motion-1',
+              motionText: 'test motion',
+              ayes: 3,
+              noes: 1,
+              abstains: 1,
+              passed: true,
+              result: 'carried',
+              voteTakenTurn: 5,
+              turn: 7,
+            },
+          },
+        ],
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      // 100 - 10*1 - 5*1 = 85
+      expect(report.grades.clarity.score).toBe(85)
+      expect(report.grades.clarity.grade).toBe('B')
+    })
   })
 
   describe('completion', () => {
