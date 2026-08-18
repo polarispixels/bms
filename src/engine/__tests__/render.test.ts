@@ -106,4 +106,15 @@ describe('renderEvent', () => {
     const { rngState } = renderEvent(event({ intent: 'TOTALLY_UNKNOWN_INTENT' }), scenario, 42)
     expect(rngState).toBe(42)
   })
+
+  it('has a built-in CHAIR_ROLE line naming the body when the scenario authors none', () => {
+    const { line } = renderEvent(
+      event({ actor: 'SYSTEM', intent: 'CHAIR_ROLE', payload: { body: 'Fixture Homeowners Association' } }),
+      scenario,
+      1,
+    )
+    expect(line).toContain('Fixture Homeowners Association')
+    expect(line.toLowerCase()).toContain('chair')
+    expect(line).not.toContain('{')
+  })
 })

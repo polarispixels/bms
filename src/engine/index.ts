@@ -8,7 +8,9 @@ export { initMeeting, reduce, latestEvents } from './reducer'
 export { legalActions } from './legality'
 export { restoreCheckpoint } from './checkpoints'
 export { buildReportCard } from './report'
+export { suggestAction } from './advisor'
 export type { DiagnosticEntry } from './checkpoints'
+export type { Suggestion } from './advisor'
 
 // Types for consumers
 export type {

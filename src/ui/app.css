@@ -183,8 +183,17 @@ button:disabled {
   font-size: 0.8rem;
 }
 
+.setup-role-note {
+  margin-top: 1.5rem;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
 .start-btn {
-  margin-top: 1.75rem;
+  margin-top: 0.6rem;
   width: 100%;
   padding: 0.75rem;
   background: var(--accent);
@@ -603,6 +612,67 @@ button:disabled {
   font-style: italic;
   font-size: 0.85rem;
   color: var(--ink-soft);
+}
+
+/* --- hint (playtest feedback: no way to ask what to do next) ------------ */
+
+.hint-row {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--rule);
+}
+
+/* Quieter than a verb button on purpose: a hint is a courtesy, not a move. */
+.hint-btn {
+  border: none;
+  background: none;
+  color: var(--accent-soft);
+  font-size: 0.78rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.hint-panel {
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent-soft);
+}
+
+.hint-lead {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.hint-why {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--ink);
+  margin-top: 0.2rem;
+}
+
+.hint-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.hint-do {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.78rem;
+  background: var(--paper);
+}
+
+.hint-dismiss {
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 0.78rem;
+  padding: 0;
 }
 
 /* --- overlays ----------------------------------------------------------- */

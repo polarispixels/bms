@@ -19,6 +19,7 @@ import type { MeetingEvent } from './types'
 
 const FALLBACK_LINES: Record<string, string> = {
   // Setting / meeting frame
+  CHAIR_ROLE: 'You are the chair of the {body}. The gavel, the agenda, and the room are yours to run.',
   MEETING_SETTING: 'The board of {body} takes its seats. {presentCount} of {seats} members are here.',
   QUORUM_PRESENT: 'A quorum is present.',
   NO_QUORUM: 'There are not enough members present to do business.',

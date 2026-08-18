@@ -28,6 +28,7 @@ import {
   reduce,
   restoreCheckpoint,
   latestEvents,
+  suggestAction,
 } from '../src/engine/index.ts'
 import { renderEvent } from '../src/engine/render.ts'
 import { scenarios, scenarioById } from '../src/content/index.ts'
@@ -154,6 +155,61 @@ function printPalette(palette: PaletteEntry[], learn: boolean): void {
     const label = learn ? `${entry.verb} — ${entry.why}` : entry.verb
     out(`  ${i + 1}) ${label}`)
   })
+  // A constant, non-numbered entry: it must never shift the numbers above,
+  // which piped scripts (and the README's happy-path transcript) rely on
+  // staying stable turn after turn.
+  out("  h) Hint — ask the clerk what to do next (costs no turn)")
+}
+
+/**
+ * Translates a suggested Action into the literal keystrokes `buildAction`
+ * would read back for it, given the palette currently on screen — so "Hint"
+ * tells the player exactly what to type, not just what verb to pick.
+ */
+function keystrokesForHint(action: Action, state: MeetingState, scenario: Scenario, palette: PaletteEntry[]): string[] {
+  const verbIndex = palette.findIndex((entry) => entry.verb === action.verb)
+  const keys = [verbIndex >= 0 ? String(verbIndex + 1) : `(${action.verb} is not on this menu right now)`]
+
+  switch (action.verb) {
+    case 'RECOGNIZE': {
+      const targets = legalActions(state, scenario).targets.recognize
+      const i = targets.indexOf(action.target)
+      keys.push(String(i >= 0 ? i + 1 : 1))
+      break
+    }
+    case 'RULE': {
+      const pending = state.pendingRequests.filter((r) => r.kind === 'POINT_OF_ORDER')
+      const i = pending.findIndex((r) => r.id === action.target)
+      keys.push(String(i >= 0 ? i + 1 : 1))
+      keys.push(action.ruling === 'WELL_TAKEN' ? '1' : '2')
+      break
+    }
+    case 'ANSWER_INQUIRY': {
+      const pending = state.pendingRequests.filter((r) => r.kind === 'INQUIRY')
+      const i = pending.findIndex((r) => r.id === action.target)
+      keys.push(String(i >= 0 ? i + 1 : 1))
+      const answers = pending[i]?.answers ?? []
+      const a = answers.findIndex((ans) => ans.id === action.answer)
+      keys.push(String(a >= 0 ? a + 1 : 1))
+      break
+    }
+    case 'CALL_VOTE':
+      keys.push(action.method === 'ROLL_CALL' ? '2' : '1')
+      break
+    default:
+      break
+  }
+  return keys
+}
+
+function printHint(state: MeetingState, scenario: Scenario, palette: PaletteEntry[]): void {
+  const hint = suggestAction(state, scenario)
+  if (!hint) {
+    out('The clerk has nothing to suggest; the meeting is over.')
+    return
+  }
+  out(`The clerk leans over: ${hint.why}`)
+  out(`  Type: ${keystrokesForHint(hint.action, state, scenario, palette).join(' then ')}`)
 }
 
 // A sub-prompt (picking a target, or the whole action) can end three ways:
@@ -375,7 +431,13 @@ async function main(): Promise<void> {
       out(`Session ended at EOF: ${turnsTaken} action(s) taken, meeting still in progress.`)
       break
     }
-    const n = Number(line.trim())
+    const trimmed = line.trim()
+    if (trimmed.toLowerCase() === 'h') {
+      // Costs no turn: print the suggestion and re-show the same menu.
+      printHint(state, scenario, palette)
+      continue
+    }
+    const n = Number(trimmed)
     if (!Number.isInteger(n) || n < 1 || n > palette.length) {
       out(`Not a valid choice: ${line}`)
       continue

@@ -252,6 +252,7 @@ export function App() {
           <Palette
             state={state}
             report={report}
+            scenario={scenario}
             mode={mode}
             disabled={settling || terminal}
             onAction={(action) => dispatch({ type: 'ACT', action })}

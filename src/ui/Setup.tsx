@@ -89,6 +89,8 @@ export function Setup({ scenarios, initial, onStart }: SetupProps) {
           <p className="seed-help">The same seed runs the same meeting.</p>
         </section>
 
+        <p className="setup-role-note">You play the chair. The meeting starts when you do.</p>
+
         <button
           type="button"
           className="start-btn"

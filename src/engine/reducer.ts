@@ -110,6 +110,9 @@ export function initMeeting(scenario: Scenario, seed: number): MeetingState {
   }
 
   const presentCount = members.filter((m) => m.present).length
+  // Playtest feedback: it wasn't clear the player IS the chair. Say so first,
+  // before the room even describes itself.
+  emit(state, 'NARRATION', 'SYSTEM', 'CHAIR_ROLE', { body: scenario.body })
   emit(state, 'NARRATION', 'SYSTEM', 'MEETING_SETTING', {
     title: scenario.title,
     body: scenario.body,

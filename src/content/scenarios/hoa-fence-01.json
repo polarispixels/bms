@@ -477,6 +477,10 @@
   ],
 
   "lines": {
+    "CHAIR_ROLE": [
+      "You are in the chair tonight. The gavel, the agenda, and the fence variance on it are yours to get through.",
+      "Nobody elected you for this exact meeting, but the gavel is set in front of your seat and the {body} board is waiting on you to use it."
+    ],
     "MEETING_SETTING": [
       "The board of the {body} meets in the clubhouse annex, under a ceiling fan that has never once been balanced. {presentCount} of {seats} owners are seated. Last year the board adopted the formal rules, on purpose, after an argument about who had been arguing.",
       "Folding table, five chairs, one urn of coffee that stopped being hot at seven. The {body} board comes to order tonight with {presentCount} of {seats} owners present and a set of formal rules it voted itself last spring."

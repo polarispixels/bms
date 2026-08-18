@@ -54,7 +54,7 @@ function transcript(state: MeetingState, s: Scenario): string[] {
  * The scripted good meeting. Turn numbers in the comments are 1-based and
  * match `state.turn` while the action is being applied.
  */
-const HAPPY_PATH: Action[] = [
+export const HAPPY_PATH: Action[] = [
   { verb: 'CALL_ITEM' }, //                                     1  order; item 1 opens
   { verb: 'RECOGNIZE', target: 'ruth' }, //                      2  Ruth moves the minutes
   { verb: 'STATE_MOTION' }, //                                   3  chair states the question

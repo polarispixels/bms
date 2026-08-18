@@ -13,7 +13,8 @@
 // gone shows a note instead of an empty row.
 
 import { useCallback, useEffect, useState } from 'react'
-import type { Action, LegalityReport, MeetingState, MemberId, Request, RequestId } from '../engine/index'
+import { suggestAction } from '../engine/index'
+import type { Action, LegalityReport, MeetingState, MemberId, Request, RequestId, Scenario } from '../engine/index'
 import type { ModeConfig } from '../modes/modes'
 
 /** Fixed palette order. Never re-sorted — ordering would be a legality tell. */
@@ -61,6 +62,7 @@ type Step =
 export type PaletteProps = {
   state: MeetingState
   report: LegalityReport
+  scenario: Scenario
   mode: ModeConfig
   /** True while the transcript is still staggering in the last turn's lines. */
   disabled: boolean
@@ -71,8 +73,11 @@ function memberName(state: MeetingState, id: MemberId): string {
   return state.members.find((m) => m.id === id)?.name ?? id
 }
 
-export function Palette({ state, report, mode, disabled, onAction }: PaletteProps) {
+export function Palette({ state, report, scenario, mode, disabled, onAction }: PaletteProps) {
   const [step, setStep] = useState<Step>({ kind: 'IDLE' })
+  // The clerk's suggestion, computed fresh at click time so it always reflects
+  // the current state rather than a stale render (D-hint).
+  const [hint, setHint] = useState<{ action: Action; why: string } | null>(null)
 
   const cancel = useCallback(() => setStep({ kind: 'IDLE' }), [])
 
@@ -153,6 +158,40 @@ export function Palette({ state, report, mode, disabled, onAction }: PaletteProp
             setStep={setStep}
             emit={emit}
           />
+        </div>
+      )}
+
+      <div className="hint-row">
+        <button
+          type="button"
+          className="hint-btn"
+          disabled={disabled}
+          onClick={() => setHint(suggestAction(state, scenario))}
+        >
+          Hint
+        </button>
+      </div>
+
+      {hint && (
+        <div className="hint-panel" role="note">
+          <p className="hint-lead">The clerk leans over:</p>
+          <p className="hint-why">{hint.why}</p>
+          <div className="hint-actions">
+            <button
+              type="button"
+              className="hint-do"
+              disabled={disabled}
+              onClick={() => {
+                setHint(null)
+                emit(hint.action)
+              }}
+            >
+              Do it
+            </button>
+            <button type="button" className="hint-dismiss" onClick={() => setHint(null)}>
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
     </div>

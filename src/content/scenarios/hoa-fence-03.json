@@ -397,6 +397,10 @@
   ],
 
   "lines": {
+    "CHAIR_ROLE": [
+      "You are in the chair tonight, with a dollar figure on the agenda nobody is going to like equally. The gavel is yours.",
+      "The gavel is set in front of your seat, an engineer's letter is on the table, and the {body} board is waiting for you to start."
+    ],
     "MEETING_SETTING": [
       "The board of the {body} meets in the clubhouse annex, under a ceiling fan that has never once been balanced. {presentCount} of {seats} owners are seated, and the second item on tonight's agenda has a dollar figure attached to it, which everyone already knows.",
       "Folding table, five chairs, one urn of coffee that stopped being hot at seven. The {body} board comes to order tonight with {presentCount} of {seats} owners present, one engineer's letter, and a wall that isn't getting any straighter while they wait."

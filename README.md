@@ -6,8 +6,8 @@ Order! is a game that teaches parliamentary procedure through interactive play. 
 
 ## How to play
 
-You are the chair. A scenario hands you an agenda and five people who have all
-been to this meeting before, and your job is to get through the business
+**You are the chair.** A scenario hands you an agenda and five people who have
+all been to this meeting before, and your job is to get through the business
 without the room deciding it can do this without you.
 
 Each turn you pick one action from the palette. The whole vocabulary:
@@ -34,6 +34,10 @@ reacts. Call a vote on a motion you never stated and nothing gets voted on;
 somebody looks up, confused, and the member who knows the rulebook files a
 point of order about it. **Learn mode** is the other setting: it shows only
 the moves that are in order right now, each with the reason it's in order.
+
+Stuck either way? The **Hint** button asks the clerk what to do next — one
+suggestion, one line of reasoning, no turn spent — and it's there in both
+modes.
 
 The room is five archetypes, and each one is a mechanic rather than a
 decoration. **The Rules Enthusiast** files a point of order every time you skip
@@ -78,8 +82,11 @@ rendered events, `[CTRL ██████░░░░ 60] [TRUST ████�
 phase/item/floor/stack summary, pending requests, and a numbered action
 palette built from `legalActions`. Type a number to pick an action; verbs that
 need a target (`RECOGNIZE`, `RULE`, `ANSWER_INQUIRY`, `CALL_VOTE`, `RECESS`)
-prompt for it afterward. It reads from stdin, so it works both at a TTY and
-piped from a script, and exits cleanly with a summary line on EOF.
+prompt for it afterward. Typing `h` instead of a number asks the clerk what to
+do next and re-shows the same menu — a constant entry that never shifts the
+numbers above it, so scripted/piped input stays valid. It reads from stdin, so
+it works both at a TTY and piped from a script, and exits cleanly with a
+summary line on EOF.
 
 Flags:
 

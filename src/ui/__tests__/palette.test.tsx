@@ -8,7 +8,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { initMeeting, legalActions } from '../../engine/index'
+import { initMeeting, legalActions, suggestAction } from '../../engine/index'
 import { scenarios } from '../../content/index'
 import { modes } from '../../modes/modes'
 import { Palette } from '../Palette'
@@ -50,7 +50,7 @@ describe('Palette — practice mode', () => {
   it('renders all eleven verbs in the fixed order', () => {
     const { state, report } = setup()
     render(
-      <Palette state={state} report={report} mode={modes.practice} disabled={false} onAction={vi.fn()} />,
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={vi.fn()} />,
     )
 
     const buttons = verbButtons()
@@ -66,7 +66,7 @@ describe('Palette — practice mode', () => {
     expect(statuses.has('OUT_OF_ORDER')).toBe(true)
 
     render(
-      <Palette state={state} report={report} mode={modes.practice} disabled={false} onAction={vi.fn()} />,
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={vi.fn()} />,
     )
 
     // Every attribute on every button, minus the verb identity itself, must be
@@ -92,7 +92,7 @@ describe('Palette — learn mode', () => {
   it('renders only IN_ORDER verbs, each with its why as a tooltip', () => {
     const { state, report } = setup()
     render(
-      <Palette state={state} report={report} mode={modes.learn} disabled={false} onAction={vi.fn()} />,
+      <Palette state={state} report={report} scenario={scenario} mode={modes.learn} disabled={false} onAction={vi.fn()} />,
     )
 
     const inOrder = VERB_ORDER.filter((verb) => report.verbs[verb].status === 'IN_ORDER')
@@ -113,7 +113,7 @@ describe('Palette — target pickers', () => {
     const onAction = vi.fn()
     const { state, report } = setup()
     render(
-      <Palette state={state} report={report} mode={modes.practice} disabled={false} onAction={onAction} />,
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={onAction} />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Recognize' }))
@@ -134,7 +134,7 @@ describe('Palette — target pickers', () => {
     const onAction = vi.fn()
     const { state, report } = setup()
     render(
-      <Palette state={state} report={report} mode={modes.practice} disabled={false} onAction={onAction} />,
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={onAction} />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Wait' }))
@@ -146,7 +146,7 @@ describe('Palette — target pickers', () => {
     const onAction = vi.fn()
     const { state, report } = setup()
     render(
-      <Palette state={state} report={report} mode={modes.practice} disabled={false} onAction={onAction} />,
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={onAction} />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Recognize' }))
@@ -163,10 +163,62 @@ describe('Palette — target pickers', () => {
     expect(report.targets.rule).toHaveLength(0)
 
     render(
-      <Palette state={state} report={report} mode={modes.practice} disabled={false} onAction={vi.fn()} />,
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={vi.fn()} />,
     )
 
     await user.click(screen.getByRole('button', { name: 'Rule on the point' }))
     expect(screen.getByText(/no point of order before the chair/i)).toBeTruthy()
+  })
+})
+
+// Playtest feedback: a first-time player got stuck with no way to ask what to
+// do next. The Hint panel surfaces the deterministic advisor's suggestion.
+describe('Palette — hint', () => {
+  it('shows the clerk\'s why on click, and "Do it" dispatches the suggested action and dismisses', async () => {
+    const user = userEvent.setup()
+    const onAction = vi.fn()
+    const { state, report } = setup()
+    const expected = suggestAction(state, scenario)
+    expect(expected).not.toBeNull()
+
+    render(
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={onAction} />,
+    )
+
+    expect(screen.queryByText(/the clerk leans over/i)).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Hint' }))
+    expect(screen.getByText(/the clerk leans over/i)).toBeTruthy()
+    expect(screen.getByText(expected!.why)).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Do it' }))
+    expect(onAction).toHaveBeenCalledTimes(1)
+    expect(onAction).toHaveBeenCalledWith(expected!.action)
+    expect(screen.queryByText(/the clerk leans over/i)).toBeNull()
+  })
+
+  it('dismisses without dispatching anything', async () => {
+    const user = userEvent.setup()
+    const onAction = vi.fn()
+    const { state, report } = setup()
+
+    render(
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={false} onAction={onAction} />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Hint' }))
+    expect(screen.getByText(/the clerk leans over/i)).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByText(/the clerk leans over/i)).toBeNull()
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it('is disabled while the palette is disabled', () => {
+    const { state, report } = setup()
+    render(
+      <Palette state={state} report={report} scenario={scenario} mode={modes.practice} disabled={true} onAction={vi.fn()} />,
+    )
+    expect((screen.getByRole('button', { name: 'Hint' }) as HTMLButtonElement).disabled).toBe(true)
   })
 })

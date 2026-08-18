@@ -107,6 +107,16 @@ describe('initMeeting', () => {
     expect(state.log.every((e) => e.type === 'NARRATION')).toBe(true)
     expect(state.log.map((e) => e.id)).toEqual(state.log.map((_, i) => `e${i + 1}`))
   })
+
+  // Playtest feedback: it wasn't clear the player IS the chair. The very
+  // first thing the meeting says is who you are, before it describes the room.
+  it('opens with a CHAIR_ROLE narration naming the scenario body, before the rest of the setting', () => {
+    const state = initMeeting(scenario, 1)
+    expect(state.log[0].type).toBe('NARRATION')
+    expect(state.log[0].intent).toBe('CHAIR_ROLE')
+    expect(state.log[0].payload.body).toBe(scenario.body)
+    expect(state.log[1].intent).toBe('MEETING_SETTING')
+  })
 })
 
 // ---------------------------------------------------------------------------

@@ -448,6 +448,10 @@
   ],
 
   "lines": {
+    "CHAIR_ROLE": [
+      "You are in the chair tonight, snowman complaint and all. The gavel and the agenda are yours to run.",
+      "The gavel is set in front of your seat, and the {body} board has strong feelings about holiday lights they would like you to referee."
+    ],
     "MEETING_SETTING": [
       "The board of the {body} meets in the clubhouse annex, under a ceiling fan that has never once been balanced. {presentCount} of {seats} owners are seated, and somebody has already brought up the neighbor's inflatable snowman before the gavel even comes down.",
       "Folding table, five chairs, one urn of coffee that stopped being hot at seven. The {body} board comes to order tonight with {presentCount} of {seats} owners present, and the second item on the agenda is the reason half of them showed up."
