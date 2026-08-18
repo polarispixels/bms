@@ -240,7 +240,7 @@ describe('hoa-fence-01 content', () => {
     const { state: restored, diagnostic } = restoreCheckpoint(state)
     expect(diagnostic.length).toBeGreaterThan(0)
     expect(diagnostic.length).toBeLessThanOrEqual(3)
-    expect(diagnostic.every((d) => d.delta < 0)).toBe(true)
+    expect(diagnostic.every((d) => d.total < 0)).toBe(true)
 
     expect(restored.currentItem).toBe(1)
     expect(restored.phase).not.toBe('COLLAPSED')

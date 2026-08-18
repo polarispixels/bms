@@ -392,6 +392,32 @@ describe('STABILIZER', () => {
     expect(reasons(after)).toEqual(['STABILIZER_RESCUE'])
     expect(after.motionStack[0].statedByChair).toBe(false) // only the chair can state it
   })
+
+  it('sits out 2 turns after a rescue, so a long stall no longer starves the interrupter (T9b)', () => {
+    let state = roomState({
+      phase: 'MOTION_PENDING',
+      turn: 3,
+      motionStack: [makeMotion({ seconded: false, secondedBy: null, statedByChair: false })],
+      log: [movedEvent(1)],
+    })
+
+    // 4 consecutive WAITs through the full turn loop (reduce), the way a
+    // player who just stalls actually plays it.
+    for (let i = 0; i < 4; i++) {
+      state = reduce(state, { verb: 'WAIT' }, scenario)
+    }
+
+    // Exactly one rescue in the first 3 turns of the stall (turns 3-5): the
+    // cooldown set by the turn-3 rescue blocks turns 4 and 5.
+    const rescuesInFirstThreeTurns = state.meterLog.filter(
+      (d) => d.reason === 'STABILIZER_RESCUE' && d.turn <= 5,
+    )
+    expect(rescuesInFirstThreeTurns).toHaveLength(1)
+
+    // With the stabilizer sidelined, the interrupter's accruing impatience is
+    // no longer starved of a scene: Dee (m3) erupts during the stall.
+    expect(state.log.some((e) => e.type === 'INTERRUPT' && e.actor === 'm3')).toBe(true)
+  })
 })
 
 // ---------------------------------------------------------------------------

@@ -31,7 +31,7 @@ import {
 } from '../src/engine/index.ts'
 import { renderEvent } from '../src/engine/render.ts'
 import { scenarios, scenarioById } from '../src/content/index.ts'
-import type { Action, LegalityStatus, MeetingState, MemberId } from '../src/engine/index.ts'
+import type { Action, DiagnosticEntry, LegalityStatus, MeetingState, MemberId } from '../src/engine/index.ts'
 import type { Scenario } from '../src/content/index.ts'
 
 // ---------------------------------------------------------------------------
@@ -274,14 +274,18 @@ function printReportCard(state: MeetingState, scenario: Scenario): void {
   for (const line of report.pedantry) out(`  - ${line}`)
 }
 
-function printCollapseDiagnostic(diagnostic: { turn: number; delta: number; label: string }[]): void {
+function printCollapseDiagnostic(diagnostic: DiagnosticEntry[]): void {
   out()
   out('=== COLLAPSE ===')
   if (diagnostic.length === 0) {
     out('  (no diagnostic available)')
   }
   for (const d of diagnostic.slice(0, 3)) {
-    out(`  Turn ${d.turn}: ${d.delta} — ${d.label}`)
+    if (d.count > 1) {
+      out(`  ${d.total} across ${d.count} turn(s): ${d.label}`)
+    } else {
+      out(`  ${d.total}: ${d.label}`)
+    }
   }
 }
 

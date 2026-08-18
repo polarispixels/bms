@@ -38,6 +38,9 @@ const VETERAN_PATIENCE = 2
 /** Turns any request may sit unaddressed before IGNORED_REQUEST_TIMEOUT (D5). */
 const REQUEST_TIMEOUT = 3
 
+/** Turns after a stabilizer rescue during which it may not rescue again (T9b). */
+const STABILIZER_COOLDOWN = 2
+
 /** Speech intents that mean a member was recognized to talk about the motion. */
 const DEBATE_INTENTS: readonly string[] = ['DEBATE_FOR', 'DEBATE_AGAINST', 'COMMENT']
 
@@ -50,6 +53,7 @@ export function initialRoom(): RoomSim {
     enthusiastPendingPoint: false,
     drifting: null,
     timedOutRequests: [],
+    stabilizerCooldownUntil: 0,
   }
 }
 
@@ -351,10 +355,16 @@ function veteran(turn: Turn, member: Member): Turn {
  * Fixes the chair's mess and makes everyone notice: every rescue costs control
  * (D5 STABILIZER_RESCUE), because the room just watched somebody else run the
  * meeting. Conditions are checked in escalating order and only one fires.
+ *
+ * A rescue also starts a 2-turn cooldown (T9b): back-to-back rescues used to
+ * consume every turn's one NPC scene, so a pure stall never let any other
+ * archetype (e.g. the interrupter) get a scene of their own. While on
+ * cooldown the stabilizer sits out even if a rescue condition still holds.
  */
 function stabilizer(turn: Turn, member: Member): Turn {
   let draft = turn.draft
   if (turn.scene) return turn
+  if (draft.turn <= draft.room.stabilizerCooldownUntil) return turn
 
   const top = topMotion(draft.motionStack)
   const movedTurn = top ? motionMovedTurn(draft, top.id) : null
@@ -381,6 +391,7 @@ function stabilizer(turn: Turn, member: Member): Turn {
   }
 
   draft = applyDelta(draft, 'STABILIZER_RESCUE')
+  draft.room = { ...draft.room, stabilizerCooldownUntil: draft.turn + STABILIZER_COOLDOWN }
   return { draft, scene: true }
 }
 

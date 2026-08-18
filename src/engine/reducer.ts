@@ -485,7 +485,7 @@ function applyRule(
 
   const valid = request.valid === true
   const agrees = (ruling === 'WELL_TAKEN') === valid
-  if (agrees) return applyDelta(draft, 'CORRECT_RULING')
+  if (agrees) return applyDelta(applyDelta(draft, 'CORRECT_RULING'), 'FAIR_RULING')
   if (ruling === 'NOT_WELL_TAKEN') return applyDelta(draft, 'INVALID_RULING')
   return applyDelta(draft, 'TECHNICALITY_RULING')
 }

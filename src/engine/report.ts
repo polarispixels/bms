@@ -38,10 +38,15 @@ function scoreProcedure(state: MeetingState): number {
   return Math.max(0, 100 - 12 * state.outOfOrderCount - 8 * invalidRulings)
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
 function scoreFairness(state: MeetingState): number {
   const selectiveRecognitionCount = state.meterLog.filter((d) => d.reason === 'SELECTIVE_RECOGNITION')
     .length
-  return Math.max(0, state.meters.trust - 5 * selectiveRecognitionCount)
+  const trust = state.meters.trust
+  return clamp(100 - 2 * (70 - trust) - 5 * selectiveRecognitionCount, 0, 100)
 }
 
 function scoreEfficiency(state: MeetingState, scenario: Scenario): number {

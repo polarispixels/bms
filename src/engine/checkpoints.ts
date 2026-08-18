@@ -7,14 +7,23 @@
 // capture either before applying the turn's action (the pre-vote boundary) or
 // after the turn counter advances (the item boundary).
 
+import { DELTAS } from './meters'
 import { nextRandom } from './rng'
-import type { Checkpoint, MeetingState, MeterDelta } from './types'
+import type { Checkpoint, MeetingState } from './types'
 
 /** Snapshot log budget: enough transcript to re-read the room, not the meeting. */
 const CHECKPOINT_LOG_LIMIT = 20
 
 /** How many things the collapse screen blames (D10). */
 const DIAGNOSTIC_LIMIT = 3
+
+/** One reason's aggregated toll since the checkpoint: how often, and how much. */
+export type DiagnosticEntry = {
+  reason: string
+  label: string
+  count: number
+  total: number
+}
 
 /**
  * Returns a new state with `label` captured as a restore point. Pure: the
@@ -40,16 +49,31 @@ export function captureCheckpoint(state: MeetingState, label: string): MeetingSt
 }
 
 /**
- * The worst things that happened since the checkpoint was taken: the three
- * largest-magnitude *negative* meter deltas from `meterLog`, biggest first.
- * Ties keep chronological order (Array.prototype.sort is stable).
+ * The worst things that happened since the checkpoint was taken: every reason
+ * with a negative net total since `sinceTurn`, aggregated across occurrences
+ * (count + summed total), sorted by |total| descending, top 3. Aggregating
+ * this way is the point — ten small hesitations that add up to -30 outweigh
+ * three -4 stabilizer rescues, and magnitude-sorting individual deltas used to
+ * hide that (D10 tuning, T9b). Ties keep the reason's first-occurrence order
+ * (Array.prototype.sort is stable).
  */
-function diagnose(state: MeetingState, sinceTurn: number): MeterDelta[] {
-  return state.meterLog
-    .filter((d) => d.turn >= sinceTurn && d.delta < 0)
-    .slice()
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-    .slice(0, DIAGNOSTIC_LIMIT)
+function diagnose(state: MeetingState, sinceTurn: number): DiagnosticEntry[] {
+  const totals = new Map<string, { count: number; total: number }>()
+  for (const d of state.meterLog) {
+    if (d.turn < sinceTurn) continue
+    const entry = totals.get(d.reason) ?? { count: 0, total: 0 }
+    entry.count += 1
+    entry.total += d.delta
+    totals.set(d.reason, entry)
+  }
+
+  const entries: DiagnosticEntry[] = []
+  for (const [reason, { count, total }] of totals) {
+    if (total >= 0) continue
+    entries.push({ reason, label: DELTAS[reason]?.label ?? reason, count, total })
+  }
+
+  return entries.sort((a, b) => Math.abs(b.total) - Math.abs(a.total)).slice(0, DIAGNOSTIC_LIMIT)
 }
 
 /**
@@ -62,7 +86,7 @@ function diagnose(state: MeetingState, sinceTurn: number): MeterDelta[] {
  * to, the state comes back untouched and the diagnosis is empty — a collapse
  * on turn one is not a crash.
  */
-export function restoreCheckpoint(state: MeetingState): { state: MeetingState; diagnostic: MeterDelta[] } {
+export function restoreCheckpoint(state: MeetingState): { state: MeetingState; diagnostic: DiagnosticEntry[] } {
   const checkpoint = state.checkpoints[state.checkpoints.length - 1]
   if (!checkpoint) return { state, diagnostic: [] }
 

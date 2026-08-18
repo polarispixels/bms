@@ -6,13 +6,41 @@
 
 import { describe, expect, it } from 'vitest'
 
+import { validateScenario } from '../../content/schema'
+import type { Scenario } from '../../content/schema'
 import { captureCheckpoint, restoreCheckpoint } from '../checkpoints'
 import { initMeeting, reduce } from '../reducer'
-import type { MeetingEvent, MeetingState, MeterDelta } from '../types'
+import type { MeetingEvent, MeetingState, MeterDelta, Request } from '../types'
 import { fixtureScenario } from './fixture'
 import { makeState } from './helpers'
 
 const scenario = fixtureScenario()
+
+/** One item, one STABILIZER member among four NONEs, no motions/beats: just
+ * enough room to let a pure stall (repeated WAIT with a pending request)
+ * trigger both HESITATION every turn and, periodically, STABILIZER_RESCUE. */
+function stallScenario(): Scenario {
+  return validateScenario({
+    id: 'stall-fixture',
+    title: 'Stall Fixture Meeting',
+    body: 'Stall Fixture Body',
+    version: '1.0.0',
+    seats: 5,
+    quorum: 3,
+    present: ['m1', 'm2', 'm3', 'm4', 'm5'],
+    parTurns: 10,
+    members: [
+      { id: 'm1', name: 'M1', archetype: 'NONE', objective: 'x', stances: {}, lines: {} },
+      { id: 'm2', name: 'M2', archetype: 'NONE', objective: 'x', stances: {}, lines: {} },
+      { id: 'm3', name: 'M3', archetype: 'NONE', objective: 'x', stances: {}, lines: {} },
+      { id: 'm4', name: 'M4', archetype: 'STABILIZER', objective: 'x', stances: {}, lines: {} },
+      { id: 'm5', name: 'M5', archetype: 'NONE', objective: 'x', stances: {}, lines: {} },
+    ],
+    agenda: [{ id: 'item-1', title: 'Item 1', motions: [] }],
+    beats: [],
+    lines: {},
+  })
+}
 
 function delta(partial: Partial<MeterDelta>): MeterDelta {
   return { turn: 1, meter: 'control', delta: -6, reason: 'OUT_OF_ORDER_ACTION', label: 'x', ...partial }
@@ -110,7 +138,7 @@ describe('restoreCheckpoint', () => {
     expect(state.checkpoints[0].id).toBe('cp1')
   })
 
-  it('reports the three largest negative deltas since the checkpoint turn', () => {
+  it('reports the three reasons with the largest negative totals since the checkpoint turn', () => {
     const { diagnostic } = restoreCheckpoint(collapsedWithHistory())
     expect(diagnostic).toHaveLength(3)
     expect(diagnostic.map((d) => d.reason)).toEqual([
@@ -118,7 +146,13 @@ describe('restoreCheckpoint', () => {
       'OUT_OF_ORDER_ACTION',
       'SELECTIVE_RECOGNITION',
     ])
-    expect(diagnostic.every((d) => d.delta < 0)).toBe(true)
+    expect(diagnostic.every((d) => d.total < 0)).toBe(true)
+    expect(diagnostic.every((d) => d.count === 1)).toBe(true)
+    expect(diagnostic.find((d) => d.reason === 'UNADDRESSED_INTERRUPT')).toMatchObject({
+      total: -8,
+      count: 1,
+      label: expect.any(String),
+    })
     expect(diagnostic.map((d) => d.reason)).not.toContain('BEFORE_THE_CHECKPOINT')
     expect(diagnostic.map((d) => d.reason)).not.toContain('GAVEL_RESTORES_ORDER')
   })
@@ -131,7 +165,25 @@ describe('restoreCheckpoint', () => {
       meterLog: [delta({ turn: 2, delta: -3, reason: 'HESITATION' })],
     })
     expect(diagnostic).toHaveLength(1)
-    expect(diagnostic[0].reason).toBe('HESITATION')
+    expect(diagnostic[0]).toMatchObject({ reason: 'HESITATION', count: 1, total: -3 })
+  })
+
+  it('aggregates repeated occurrences of the same reason into one entry with a summed total', () => {
+    const base = captureCheckpoint(makeState({ turn: 2 }), 'cp')
+    const { diagnostic } = restoreCheckpoint({
+      ...base,
+      turn: 6,
+      meterLog: [
+        delta({ turn: 2, delta: -3, reason: 'HESITATION' }),
+        delta({ turn: 3, delta: -3, reason: 'HESITATION' }),
+        delta({ turn: 4, delta: -3, reason: 'HESITATION' }),
+        delta({ turn: 5, delta: -4, reason: 'STABILIZER_RESCUE' }),
+      ],
+    })
+    expect(diagnostic).toEqual([
+      { reason: 'HESITATION', label: expect.any(String), count: 3, total: -9 },
+      { reason: 'STABILIZER_RESCUE', label: expect.any(String), count: 1, total: -4 },
+    ])
   })
 
   it('returns the state untouched when there is nothing to rewind to', () => {
@@ -165,11 +217,38 @@ describe('collapse and rewind', () => {
     expect(state.meters.control).toBeGreaterThan(0)
     expect(diagnostic.length).toBeGreaterThan(0)
     expect(diagnostic.length).toBeLessThanOrEqual(3)
-    expect(diagnostic.every((d) => d.delta < 0 && d.turn >= checkpointTurn)).toBe(true)
+    expect(diagnostic.every((d) => d.total < 0)).toBe(true)
 
     // The restored meeting is playable again.
     const resumed = reduce(state, { verb: 'WAIT' }, scenario)
     expect(resumed.phase).toBe('ITEM_OPEN')
     expect(resumed.turn).toBe(checkpointTurn + 1)
+  })
+
+  it('surfaces HESITATION as the top-blamed reason in a pure-stall spiral, ahead of the stabilizer rescues', () => {
+    // Open the item (captures a checkpoint), seed one pending request that
+    // nobody ever addresses, then WAIT forever: HESITATION fires every turn
+    // (-3) while STABILIZER_RESCUE fires only once every few turns (-4 each,
+    // 2-turn cooldown) — so HESITATION's summed total should dominate even
+    // though individual rescue deltas are larger in magnitude.
+    const sc = stallScenario()
+    let s = reduce(initMeeting(sc, 5), { verb: 'CALL_ITEM' }, sc)
+    expect(s.checkpoints).toHaveLength(1)
+
+    const stuckRequest: Request = { id: 'stuck-1', kind: 'RECOGNITION', member: 'm1', createdTurn: s.turn, purpose: 'DEBATE_FOR' }
+    s = { ...s, pendingRequests: [...s.pendingRequests, stuckRequest] }
+
+    while (s.phase !== 'COLLAPSED' && s.turn < 60) {
+      s = reduce(s, { verb: 'WAIT' }, sc)
+    }
+    expect(s.phase).toBe('COLLAPSED')
+
+    const { diagnostic } = restoreCheckpoint(s)
+    expect(diagnostic[0].reason).toBe('HESITATION')
+    expect(diagnostic.some((d) => d.reason === 'STABILIZER_RESCUE')).toBe(true)
+    const hesitation = diagnostic.find((d) => d.reason === 'HESITATION')!
+    const rescue = diagnostic.find((d) => d.reason === 'STABILIZER_RESCUE')!
+    expect(hesitation.count).toBeGreaterThan(1)
+    expect(Math.abs(hesitation.total)).toBeGreaterThan(Math.abs(rescue.total))
   })
 })

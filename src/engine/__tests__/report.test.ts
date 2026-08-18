@@ -94,7 +94,7 @@ describe('buildReportCard', () => {
   })
 
   describe('fairness', () => {
-    it('reflects final trust meter', () => {
+    it('reflects the new formula: 100 - 2*(70-trust) - 5*selectiveRecognitionCount', () => {
       const state = makeState({
         meters: { control: 95, trust: 75 },
         outOfOrderCount: 0,
@@ -105,11 +105,12 @@ describe('buildReportCard', () => {
 
       const report = buildReportCard(state, scenario)
 
-      expect(report.grades.fairness.score).toBe(75)
-      expect(report.grades.fairness.grade).toBe('C')
+      // 100 - 2*(70-75) - 0 = 100 - (-10) = 110, clamped to 100
+      expect(report.grades.fairness.score).toBe(100)
+      expect(report.grades.fairness.grade).toBe('A')
     })
 
-    it('penalizes SELECTIVE_RECOGNITION occurrences', () => {
+    it('penalizes SELECTIVE_RECOGNITION occurrences at 5 points each', () => {
       const state = makeState({
         meters: { control: 95, trust: 95 },
         outOfOrderCount: 0,
@@ -135,9 +136,67 @@ describe('buildReportCard', () => {
 
       const report = buildReportCard(state, scenario)
 
-      // trust 95 - 5*2 = 85
-      expect(report.grades.fairness.score).toBe(85)
-      expect(report.grades.fairness.grade).toBe('B')
+      // 100 - 2*(70-95) - 5*2 = 100 + 50 - 10 = 140, clamped to 100
+      expect(report.grades.fairness.score).toBe(100)
+      expect(report.grades.fairness.grade).toBe('A')
+    })
+
+    it('scores a flawless chair (trust 70, no selective recognition) as a full 100/A', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 70 },
+        outOfOrderCount: 0,
+        meterLog: [],
+        itemsCompleted: 2,
+        turn: 11,
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      // 100 - 2*(70-70) - 0 = 100
+      expect(report.grades.fairness.score).toBe(100)
+      expect(report.grades.fairness.grade).toBe('A')
+    })
+
+    it('clamps a FAIR_RULING-boosted trust of 73 at 100, not 106', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 73 },
+        outOfOrderCount: 0,
+        meterLog: [
+          { turn: 1, meter: 'trust', delta: 3, reason: 'FAIR_RULING', label: 'A fair ruling, fairly delivered' },
+        ],
+        itemsCompleted: 2,
+        turn: 11,
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      // 100 - 2*(70-73) - 0 = 100 + 6 = 106, clamped to 100
+      expect(report.grades.fairness.score).toBe(100)
+      expect(report.grades.fairness.grade).toBe('A')
+    })
+
+    it('scores trust 50 with one selective recognition as 55/F', () => {
+      const state = makeState({
+        meters: { control: 95, trust: 50 },
+        outOfOrderCount: 0,
+        meterLog: [
+          {
+            turn: 1,
+            meter: 'trust',
+            delta: -5,
+            reason: 'SELECTIVE_RECOGNITION',
+            label: 'Selective recognition',
+          },
+        ],
+        itemsCompleted: 2,
+        turn: 11,
+      })
+
+      const report = buildReportCard(state, scenario)
+
+      // 100 - 2*(70-50) - 5*1 = 100 - 40 - 5 = 55
+      expect(report.grades.fairness.score).toBe(55)
+      expect(report.grades.fairness.grade).toBe('F')
     })
   })
 

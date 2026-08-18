@@ -442,14 +442,15 @@ describe('RULE', () => {
     valid,
   })
 
-  it('rewards a ruling that matches the point (control +4) and clears the request', () => {
+  it('rewards a ruling that matches the point (control +4, trust +3 FAIR_RULING) and clears the request', () => {
     const after = reduce(
       makeState({ pendingRequests: [point(true)] }),
       { verb: 'RULE', target: 'poo-1', ruling: 'WELL_TAKEN' },
       scenario,
     )
-    expect(reasons(after)).toEqual(['CORRECT_RULING'])
+    expect(reasons(after)).toEqual(['CORRECT_RULING', 'FAIR_RULING'])
     expect(after.meters.control).toBe(74)
+    expect(after.meters.trust).toBe(73)
     expect(after.pendingRequests).toHaveLength(0)
   })
 
@@ -479,7 +480,7 @@ describe('RULE', () => {
       { verb: 'RULE', target: 'poo-1', ruling: 'NOT_WELL_TAKEN' },
       scenario,
     )
-    expect(reasons(after)).toEqual(['CORRECT_RULING'])
+    expect(reasons(after)).toEqual(['CORRECT_RULING', 'FAIR_RULING'])
   })
 })
 

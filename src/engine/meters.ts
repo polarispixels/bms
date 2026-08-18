@@ -61,6 +61,11 @@ export const DELTAS: Record<string, { meter: 'control' | 'trust'; delta: number;
     delta: 4,
     label: 'Chair\'s ruling matched the validity of the point',
   },
+  FAIR_RULING: {
+    meter: 'trust',
+    delta: 3,
+    label: 'A fair ruling, fairly delivered',
+  },
   SELECTIVE_RECOGNITION: {
     meter: 'trust',
     delta: -5,

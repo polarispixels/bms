@@ -17,6 +17,7 @@ describe('meters', () => {
         'INVALID_RULING',
         'TECHNICALITY_RULING',
         'CORRECT_RULING',
+        'FAIR_RULING',
         'SELECTIVE_RECOGNITION',
         'WRONG_INQUIRY_ANSWER',
         'IGNORED_REQUEST_TIMEOUT',
@@ -72,6 +73,9 @@ describe('meters', () => {
       expect(DELTAS.TECHNICALITY_RULING.meter).toBe('trust')
       expect(DELTAS.TECHNICALITY_RULING.delta).toBe(-5)
 
+      expect(DELTAS.FAIR_RULING.meter).toBe('trust')
+      expect(DELTAS.FAIR_RULING.delta).toBe(3)
+
       expect(DELTAS.SELECTIVE_RECOGNITION.meter).toBe('trust')
       expect(DELTAS.SELECTIVE_RECOGNITION.delta).toBe(-5)
 
@@ -126,6 +130,7 @@ describe('meters', () => {
         enthusiastPendingPoint: false,
         drifting: null,
         timedOutRequests: [],
+        stabilizerCooldownUntil: 0,
       },
     }
 
@@ -146,9 +151,9 @@ describe('meters', () => {
         ...baseState,
         meters: { control: 70, trust: 50 },
       }
-      // No positive trust deltas in the table, so this won't apply,
-      // but test the mechanism anyway
-      expect(stateWithLowTrust.meters.trust).toBe(50)
+      const result = applyDelta(stateWithLowTrust, 'FAIR_RULING')
+      expect(result.meters.trust).toBe(53) // 50 + 3
+      expect(result.meters.control).toBe(70)
     })
 
     it('applies negative delta to trust meter', () => {

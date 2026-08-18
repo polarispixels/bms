@@ -147,6 +147,14 @@ export type RoomSim = {
   drifting: { member: MemberId; startedTurn: number } | null
   /** Requests that already charged IGNORED_REQUEST_TIMEOUT (fires once each). */
   timedOutRequests: RequestId[]
+  /**
+   * The last turn number through which the stabilizer may NOT rescue again
+   * after a rescue (fun-gate T9b): a rescue on turn T sets this to T+2, so the
+   * stabilizer sits out turns T+1 and T+2, leaving the scene free for other
+   * archetypes (e.g. the interrupter) instead of every stall being resolved
+   * by the same member every turn. 0 means no rescue has happened yet.
+   */
+  stabilizerCooldownUntil: number
 }
 
 export type VoteTally = {

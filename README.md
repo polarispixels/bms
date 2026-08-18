@@ -23,10 +23,9 @@ Flags:
 
 - `--seed N` — RNG seed (default `1`)
 - `--scenario id` — scenario id to play (default: the first one in `src/content`)
-- `--learn` — filters the palette down to verbs that are not `OUT_OF_ORDER` and
-  shows why each one is legal or risky. Without it (the default "practice"
-  mode) every verb is listed with no indication of its legality — you find
-  out by trying it.
+- `--learn` — filters the palette down to only `IN_ORDER` actions, shown with
+  reasons. Without it (the default "practice" mode) every verb is listed with
+  no indication of its legality — you find out by trying it.
 
 On `ADJOURNED` it prints the report card; on `COLLAPSED` it prints a 3-line
 diagnostic (the worst meter hits since the last checkpoint) and asks whether
