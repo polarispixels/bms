@@ -20,6 +20,10 @@
   --warn: #b07d16;
   --bad: #a8382a;
   --shadow: rgba(35, 32, 26, 0.18);
+  /* --paper-raised with the alpha taken out, for gradients that must fade to
+   * nothing: `transparent` computes to transparent *black* in a gradient and
+   * greys the ramp on Safari. */
+  --paper-raised-fade: rgba(251, 249, 244, 0);
 
   --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   --sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -664,6 +668,10 @@ button:disabled {
   background: var(--paper-sunk);
 }
 
+/* Desktop keeps wrapping: vertical space in the right column is not scarce,
+ * the dock is not sticky here, and a second row of chips simply pushes the
+ * scrolling state panel above it. The mobile queries below swap this for a
+ * single scrolling row — see the note there for why. */
 .floor-strip {
   display: flex;
   flex-wrap: wrap;
@@ -679,6 +687,11 @@ button:disabled {
 .floor-chip {
   display: inline-flex;
   align-items: center;
+  /* Never squash and never wrap to a second line: the chip's height is what
+   * bounds the strip's height, and the strip's height is what bounds the
+   * sticky dock. A chip that wrapped internally would defeat that. */
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding: 0.3rem 0.6rem;
   font-size: 0.8rem;
   background: var(--paper-raised);
@@ -1110,6 +1123,9 @@ button:disabled {
     z-index: 2;
   }
 
+  /* One row only, scrolling sideways — see the bounded-strip block at the
+   * foot of this file. A short viewport is exactly where an unbounded dock
+   * would put the oldest chips out of reach. */
   .floor-strip {
     padding: 0.35rem 0.75rem;
   }
@@ -1210,6 +1226,8 @@ button:disabled {
     z-index: 2;
   }
 
+  /* One row only, scrolling sideways — see the bounded-strip block at the
+   * foot of this file. */
   .floor-strip {
     padding: 0.4rem 0.75rem;
   }
@@ -1272,5 +1290,55 @@ button:disabled {
    * and they need the same breathing room between touch targets. */
   .floor-strip {
     gap: 0.5rem;
+  }
+
+  /* --- the strip is bounded on mobile ------------------------------------
+   * This selector covers both mobile layouts (narrow *and* short), which is
+   * the point: in both of them the strip lives inside a `position: sticky`
+   * dock, and a sticky box does not get its own scrollport. Left wrapping, a
+   * busy turn — a hand, a point of order, a question and an interrupter at
+   * once — would push the dock taller than the viewport, and the rows that
+   * overflowed the top would be unreachable *permanently*, because there is
+   * no way to scroll a sticky element's own contents into view. That is the
+   * same "can't reach the controls" bug the playtester hit twice already.
+   *
+   * So: exactly one row, always. The row scrolls sideways instead of growing
+   * downwards, which makes the dock's height a constant — one chip plus its
+   * padding — no matter how many people are waiting.
+   *
+   * Discoverability is the classic two-layer background trick, and it costs
+   * no JS: the paper-coloured "cover" layers are `local`, so they travel with
+   * the content and uncover a shadow only at an end you can still scroll
+   * towards. A strip that fits shows no shadows at all. */
+  .floor-strip {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
+    background-image:
+      linear-gradient(to right, var(--paper-raised), var(--paper-raised-fade)),
+      linear-gradient(to left, var(--paper-raised), var(--paper-raised-fade)),
+      linear-gradient(to right, var(--shadow), transparent),
+      linear-gradient(to left, var(--shadow), transparent);
+    background-position: left center, right center, left center, right center;
+    background-size: 1.6rem 100%, 1.6rem 100%, 0.6rem 100%, 0.6rem 100%;
+    background-repeat: no-repeat;
+    background-attachment: local, local, scroll, scroll;
+  }
+
+  /* Unobtrusive on purpose: a thin rule, not a widget. */
+  .floor-strip::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .floor-strip::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .floor-strip::-webkit-scrollbar-thumb {
+    background: var(--rule-strong);
+    border-radius: 2px;
   }
 }
