@@ -28,13 +28,23 @@
 html,
 body,
 #root {
-  height: 100%;
+  /* `dvh` tracks the browser's real, current visible area — on mobile,
+   * `vh`/`%` are pinned to the *largest* possible viewport (chrome hidden),
+   * so a shell sized with them is taller than what's actually on screen
+   * once the address bar is showing. The `vh` line is a fallback for
+   * browsers that don't know `dvh`; the `dvh` line after it wins wherever
+   * it's supported. */
+  height: 100vh;
+  height: 100dvh;
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--sans);
+  /* Belt-and-suspenders: every scrollable region below is internal, so the
+   * page itself should never need to scroll sideways. */
+  overflow-x: hidden;
 }
 
 button {
@@ -76,7 +86,8 @@ button:disabled {
 /* --- setup screen ------------------------------------------------------- */
 
 .setup {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -154,6 +165,7 @@ button:disabled {
 .mode-blurb {
   color: var(--ink-soft);
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .scenario-meta {
@@ -209,7 +221,8 @@ button:disabled {
 /* --- app shell ---------------------------------------------------------- */
 
 .app {
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -258,6 +271,17 @@ button:disabled {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(21rem, 1fr);
+  /* The classic grid bug: with an implicit `auto` row, the track sizes to
+   * the *content* of whichever column has more of it (an `overflow: auto`
+   * descendant still reports its full, unclipped content height as its
+   * max-content contribution — its own `min-height: 0` only stops it being
+   * forced to *grow*, it doesn't cap the row). On a meeting with more state
+   * than fits a short screen, that let the row — and both columns riding on
+   * it — grow taller than `.stage` itself, and `.app`'s `overflow: hidden`
+   * clipped whatever fell below the fold: the palette, every time.
+   * `minmax(0, 1fr)` pins the row to the actual available height so each
+   * column is forced back onto its own internal scrollbar instead. */
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .transcript-col {
@@ -316,6 +340,7 @@ button:disabled {
 .line {
   animation: line-in 260ms ease-out both;
   max-width: 62ch;
+  overflow-wrap: anywhere;
 }
 
 .line-stage {
@@ -405,6 +430,32 @@ button:disabled {
   padding-top: 0.9rem;
 }
 
+/* Only meaningful once `.state-panel` becomes a collapsible `<details>` at
+ * narrow widths (see the max-width: 720px block below) — hidden on desktop
+ * so the always-open panel looks exactly as it did before. */
+.state-summary {
+  display: none;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  padding: 0.5rem 0;
+}
+
+.state-summary::-webkit-details-marker {
+  display: none;
+}
+
+.state-summary::before {
+  content: '▸ ';
+  color: var(--ink-faint);
+}
+
+.state-panel[open] > .state-summary::before {
+  content: '▾ ';
+}
+
 .panel-row {
   display: flex;
   align-items: center;
@@ -481,6 +532,7 @@ button:disabled {
   font-family: var(--serif);
   font-size: 0.9rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .chips {
@@ -597,6 +649,7 @@ button:disabled {
   background: var(--paper);
   text-align: left;
   max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .sub-back {
@@ -699,7 +752,8 @@ button:disabled {
 
 .overlay-card {
   width: min(42rem, 100%);
-  max-height: 100%;
+  max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   background: var(--paper-raised);
   border: 1px solid var(--rule-strong);
@@ -876,5 +930,196 @@ button:disabled {
 
   .transcript {
     padding: 1.25rem 1.25rem 2rem;
+  }
+}
+
+/* --- short landscape (a phone held sideways) -----------------------------
+ * There's width for two columns but not height for meters + the full state
+ * panel + the palette to all fit. `.side-col` itself becomes the scroller —
+ * meters and state ride past together — and the palette sticks to the
+ * bottom of that scrollport, opaque, so the chair's actions are on screen
+ * no matter how far the state has been scrolled behind them. This is the
+ * direct fix for the bug report ("can't reach the actions on the lower
+ * half"): before, the palette sat *after* the only scrolling region instead
+ * of pinned to it, so on a short viewport it fell below the fold with no
+ * way to reach it. */
+
+@media (max-height: 540px) {
+  .app-head {
+    padding: 0.35rem 0.75rem;
+    gap: 0.6rem;
+  }
+
+  .app-name {
+    font-size: 1.05rem;
+  }
+
+  .transcript {
+    padding: 0.85rem 1.1rem 1.25rem;
+    font-size: 0.92rem;
+  }
+
+  .transcript-head {
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .transcript-title {
+    font-size: 1.15rem;
+  }
+
+  .side-col {
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .side-scroll {
+    flex: none;
+    min-height: 0;
+    overflow: visible;
+    padding: 0 0.75rem 0.75rem;
+  }
+
+  .meters {
+    padding: 0.5rem 0.75rem;
+    gap: 0.35rem;
+  }
+
+  .state-panel {
+    padding-top: 0.5rem;
+  }
+
+  .palette {
+    position: sticky;
+    bottom: 0;
+    flex: none;
+    z-index: 2;
+    padding: 0.5rem 0.75rem 0.6rem;
+  }
+
+  .verb-btn,
+  .sub-btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.78rem;
+  }
+}
+
+/* --- portrait / narrow (a phone held upright) -----------------------------
+ * The two-column grid becomes one stack: a compact meters strip up top, the
+ * transcript filling the remaining space with its own scroll, the state
+ * panel collapsed to a `<details>` one-liner, and the palette pinned to the
+ * bottom of the viewport.
+ *
+ * `.side-col` goes `display: contents` — its own box disappears but its
+ * children (meters, the state panel's wrapper, the palette) stay in the
+ * DOM, so `order` can interleave them with `.transcript-col` as if they
+ * were all one flat row of flex children. */
+
+@media (max-width: 720px) {
+  .app {
+    overflow-y: auto;
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .side-col {
+    display: contents;
+  }
+
+  .meters {
+    order: 1;
+    flex: none;
+    display: flex;
+    flex-direction: row;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .meter {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .transcript-col {
+    order: 2;
+    flex: 1 1 auto;
+    min-height: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  .transcript {
+    padding: 0.9rem 1rem 1.25rem;
+  }
+
+  .side-scroll {
+    order: 3;
+    flex: none;
+    overflow: visible;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-raised);
+  }
+
+  .state-summary {
+    display: block;
+  }
+
+  .palette {
+    order: 4;
+    flex: none;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
+  }
+
+  .setup-card {
+    padding: 1.5rem 1.25rem 1.75rem;
+  }
+
+  .setup-title {
+    font-size: 2.25rem;
+  }
+
+  .overlay {
+    padding: 0.75rem;
+  }
+
+  .overlay-card {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+
+  .report-head {
+    flex-wrap: wrap;
+  }
+}
+
+/* --- touch targets --------------------------------------------------------
+ * Every interactive control in the game is a <button>, so one rule covers
+ * verbs, targets, hint actions and modal buttons alike. */
+
+@media (max-width: 720px), (max-height: 540px) {
+  button {
+    min-height: 44px;
+  }
+
+  .link-btn,
+  .hint-btn,
+  .hint-dismiss,
+  .sub-back {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .verb-row,
+  .sub-row,
+  .hint-actions,
+  .overlay-actions {
+    gap: 0.5rem;
   }
 }

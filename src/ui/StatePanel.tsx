@@ -5,6 +5,7 @@
 // the engine stores it (`motionStack[0]` is the main motion) and exactly the
 // mental model the player needs when deciding what can be voted on.
 
+import { useState } from 'react'
 import type { MeetingState, MemberId, Scenario } from '../engine/index'
 
 const PHASE_LABELS: Record<MeetingState['phase'], string> = {
@@ -34,12 +35,33 @@ function nameOf(state: MeetingState, id: MemberId): string {
   return state.members.find((m) => m.id === id)?.name ?? id
 }
 
+/**
+ * Desktop keeps the state panel open, always — the `<details>` wrapper below
+ * exists only so a short/narrow viewport can collapse it to one line. jsdom
+ * has no `matchMedia` (calling it throws), so tests — which never resize the
+ * window — fall through to "open", matching the panel's old, always-visible
+ * behaviour exactly.
+ */
+function defaultOpen(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true
+  return window.matchMedia('(min-width: 721px)').matches
+}
+
 export function StatePanel({ state, scenario }: StatePanelProps) {
+  const [open, setOpen] = useState(defaultOpen)
   const item = scenario.agenda[state.currentItem]
   const stack = [...state.motionStack].reverse() // top of stack first in the DOM
+  const summary = `${PHASE_LABELS[state.phase]} · ${
+    item ? item.title : 'nothing before the board'
+  } · ${stack.length} on the stack`
 
   return (
-    <div className="state-panel">
+    <details
+      className="state-panel"
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
+      <summary className="state-summary">{summary}</summary>
       <div className="panel-row">
         <h2 className="panel-heading">The floor</h2>
         <span className="phase-badge" data-phase={state.phase}>
@@ -115,6 +137,6 @@ export function StatePanel({ state, scenario }: StatePanelProps) {
           })}
         </ul>
       )}
-    </div>
+    </details>
   )
 }
