@@ -9,6 +9,7 @@ export { legalActions } from './legality'
 export { restoreCheckpoint } from './checkpoints'
 export { buildReportCard } from './report'
 export { suggestAction } from './advisor'
+export { describeSituation } from './situation'
 export type { DiagnosticEntry } from './checkpoints'
 export type { Suggestion } from './advisor'
 

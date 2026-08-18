@@ -33,6 +33,21 @@ export function Setup({ scenarios, initial, onStart }: SetupProps) {
           A board meeting simulator. You are the chair. The rules are not the hard part.
         </p>
 
+        {/* Pre-game teaching, which the spec allows: "react, don't grade"
+            governs play, not the title screen. Five lines, no jargon, so a
+            first-timer knows the shape of a meeting before the room starts
+            moving without them. */}
+        <section className="setup-section primer">
+          <h2 className="panel-heading">How a meeting goes</h2>
+          <ol className="primer-steps">
+            <li>Members raise their hands. Nobody speaks until you recognize them.</li>
+            <li>Someone moves something. It dies unless another member seconds it.</li>
+            <li>You state the motion back to the room, and debate opens.</li>
+            <li>When debate has run out, you put it to a vote and announce the result.</li>
+            <li>Lost? The Hint button asks the clerk. It costs you nothing.</li>
+          </ol>
+        </section>
+
         <section className="setup-section">
           <h2 className="panel-heading">Meeting</h2>
           <ul className="scenario-list">

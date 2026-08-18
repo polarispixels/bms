@@ -98,7 +98,10 @@ function computeSuggestion(state: MeetingState): Suggestion {
     const target = oldest(recognitions)
     return {
       action: { verb: 'RECOGNIZE', target: target.member },
-      why: "A hand's been waiting. Recognize them before they give up on it.",
+      // Points at the floor strip on purpose: the first version of this line
+      // referred to a raised hand the interface never showed, and a playtester
+      // went looking for it and found nothing.
+      why: "A hand's been up a while — you'll see it above your actions. Recognize them before they give up on it.",
     }
   }
 

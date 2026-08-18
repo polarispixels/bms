@@ -31,11 +31,14 @@ import { scenarios } from '../content/index'
 import { modes } from '../modes/modes'
 import type { ModeId } from '../modes/modes'
 import { CollapseModal } from './CollapseModal'
+import { FloorStrip } from './FloorStrip'
 import { Meters } from './Meters'
 import { Palette } from './Palette'
+import type { PaletteFocus } from './Palette'
 import { ReportCard } from './ReportCard'
 import { Setup } from './Setup'
 import type { SetupChoice } from './Setup'
+import { SituationLine } from './SituationLine'
 import { StatePanel } from './StatePanel'
 import { Transcript } from './Transcript'
 import type { Line } from './Transcript'
@@ -199,6 +202,9 @@ export function App() {
   // Remembered across a return to Setup, so "Change setup" and "Leave the
   // meeting" come back to the choices the player made rather than the defaults.
   const [lastChoice, setLastChoice] = useState<SetupChoice | null>(null)
+  // A picker the floor strip has asked the palette to open (tap a point of
+  // order, land on the ruling). Held here because the two are siblings.
+  const [focus, setFocus] = useState<PaletteFocus | null>(null)
 
   // Drain the queue one line at a time so a turn plays out rather than lands.
   useEffect(() => {
@@ -245,18 +251,32 @@ export function App() {
         </section>
 
         <aside className="side-col">
+          <SituationLine state={state} scenario={scenario} />
           <Meters control={state.meters.control} trust={state.meters.trust} />
           <div className="side-scroll">
             <StatePanel state={state} scenario={scenario} />
           </div>
-          <Palette
-            state={state}
-            report={report}
-            scenario={scenario}
-            mode={mode}
-            disabled={settling || terminal}
-            onAction={(action) => dispatch({ type: 'ACT', action })}
-          />
+          {/* Strip and palette share one sticky box: on a phone the room's
+              raised hands must ride along with the buttons that answer them,
+              never scroll off above the fold. */}
+          <div className="floor-dock">
+            <FloorStrip
+              state={state}
+              scenario={scenario}
+              disabled={settling || terminal}
+              onAction={(action) => dispatch({ type: 'ACT', action })}
+              onOpenPicker={setFocus}
+            />
+            <Palette
+              state={state}
+              report={report}
+              scenario={scenario}
+              mode={mode}
+              disabled={settling || terminal}
+              onAction={(action) => dispatch({ type: 'ACT', action })}
+              focus={focus}
+            />
+          </div>
         </aside>
       </main>
 

@@ -195,6 +195,27 @@ button:disabled {
   font-size: 0.8rem;
 }
 
+/* The primer: what a meeting actually looks like, before one starts. */
+.primer {
+  border: 1px solid var(--rule-strong);
+  border-left: 3px solid var(--accent-soft);
+  background: var(--paper);
+  padding: 0.75rem 0.9rem 0.85rem;
+}
+
+.primer-steps {
+  margin: 0.4rem 0 0 1.1rem;
+  padding: 0;
+  font-family: var(--serif);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.primer-steps li {
+  padding: 0.1rem 0;
+}
+
 .setup-role-note {
   margin-top: 1.5rem;
   font-family: var(--serif);
@@ -601,6 +622,84 @@ button:disabled {
   font-size: 0.72rem;
 }
 
+/* --- situation line -------------------------------------------------------
+ * "Where are we?" in one or two sentences of English, sitting at the top of
+ * the right column on desktop and directly above the action dock on a phone.
+ * Deliberately unlike the meters next to it — paper ground, an accent rule
+ * down the left, serif prose — because it is a sentence, not a gauge. */
+
+.situation {
+  flex: none;
+  padding: 0.55rem 1rem 0.6rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  border-left: 3px solid var(--accent-soft);
+}
+
+.situation-label {
+  font-family: var(--sans);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.situation-text {
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  margin-top: 0.15rem;
+  overflow-wrap: anywhere;
+}
+
+/* --- floor strip + palette dock -------------------------------------------
+ * One box holding "who is waiting" and "what the chair can do", so the two
+ * are never separated — on a short or narrow screen the whole dock is what
+ * sticks to the bottom, not the palette alone. Playtest round two: the hint
+ * referred to a raised hand the interface never showed. */
+
+.floor-dock {
+  flex: none;
+  background: var(--paper-sunk);
+}
+
+.floor-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  background: var(--paper-raised);
+  border-top: 2px solid var(--rule-strong);
+}
+
+/* Chips carry no legality information — only who is visibly asking — so they
+ * look the same in Practice and Learn (spec §4.3 is about the *palette*
+ * telling you what is in order; this tells you what is in the room). */
+.floor-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+  background: var(--paper-raised);
+  border-radius: 999px;
+}
+
+.floor-chip:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.floor-chip[data-request-kind='POINT_OF_ORDER'],
+.floor-chip[data-request-kind='INTERRUPT'] {
+  border-color: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip-age {
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+}
+
 /* --- palette ------------------------------------------------------------ */
 
 .palette {
@@ -989,11 +1088,33 @@ button:disabled {
     padding-top: 0.5rem;
   }
 
-  .palette {
+  /* `.side-col` is the scroller here, so the situation line pins to the top of
+   * it and the dock (strip + palette) to the bottom: the two things the chair
+   * needs — what is happening, and what can be done about it — stay on screen
+   * however far the state between them has been scrolled. */
+  .situation {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 0.4rem 0.75rem 0.45rem;
+  }
+
+  .situation-text {
+    font-size: 0.86rem;
+  }
+
+  .floor-dock {
     position: sticky;
     bottom: 0;
     flex: none;
     z-index: 2;
+  }
+
+  .floor-strip {
+    padding: 0.35rem 0.75rem;
+  }
+
+  .palette {
     padding: 0.5rem 0.75rem 0.6rem;
   }
 
@@ -1074,12 +1195,26 @@ button:disabled {
     display: block;
   }
 
-  .palette {
+  /* Reading order down the phone: meters, transcript, the state panel's
+   * one-line summary, then the situation line and the dock it introduces. */
+  .situation {
     order: 4;
+    padding: 0.5rem 0.75rem 0.55rem;
+  }
+
+  .floor-dock {
+    order: 5;
     flex: none;
     position: sticky;
     bottom: 0;
     z-index: 2;
+  }
+
+  .floor-strip {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .palette {
     padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
   }
 
@@ -1132,7 +1267,10 @@ button:disabled {
   .verb-row,
   .sub-row,
   .hint-actions,
-  .overlay-actions {
+  .overlay-actions,
+  /* Chips are buttons too: the 44px floor above applies to them unchanged,
+   * and they need the same breathing room between touch targets. */
+  .floor-strip {
     gap: 0.5rem;
   }
 }

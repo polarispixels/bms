@@ -93,6 +93,14 @@ describe('App', () => {
     // The state panel tracks the engine.
     expect(screen.getByText(scenario.agenda[0].title)).toBeTruthy()
     expect(screen.getByRole('meter', { name: 'CONTROL' })).toBeTruthy()
+
+    // ...and so does the plain-English line above the palette, which is where
+    // a player who does not read `MOTION_PENDING` finds out where they are.
+    const situation = document.querySelector('.situation-text')
+    expect(situation?.textContent).toContain(scenario.agenda[0].title)
+    // The floor strip lives inside the same sticky dock as the palette, so a
+    // raised hand can never scroll away from the button that answers it.
+    expect(document.querySelector('.floor-dock .palette')).toBeTruthy()
   })
 
   it('returns to Setup holding the choices the player made', async () => {

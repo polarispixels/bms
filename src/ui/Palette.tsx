@@ -59,6 +59,17 @@ type Step =
   | { kind: 'VOTE_METHOD' }
   | { kind: 'RECESS' }
 
+/**
+ * A sub-picker the floor strip has asked the palette to open, with the target
+ * already chosen (the chip the player tapped names it) and the *judgement*
+ * still open — the ruling and the answer are the chair's to make, never
+ * something the UI preselects. A fresh object means "open it again", so tapping
+ * the same chip after backing out reopens the picker.
+ */
+export type PaletteFocus =
+  | { kind: 'RULE'; target: RequestId }
+  | { kind: 'ANSWER'; target: RequestId }
+
 export type PaletteProps = {
   state: MeetingState
   report: LegalityReport
@@ -67,13 +78,15 @@ export type PaletteProps = {
   /** True while the transcript is still staggering in the last turn's lines. */
   disabled: boolean
   onAction: (action: Action) => void
+  /** Optional: a picker the floor strip wants opened on a given target. */
+  focus?: PaletteFocus | null
 }
 
 function memberName(state: MeetingState, id: MemberId): string {
   return state.members.find((m) => m.id === id)?.name ?? id
 }
 
-export function Palette({ state, report, scenario, mode, disabled, onAction }: PaletteProps) {
+export function Palette({ state, report, scenario, mode, disabled, onAction, focus }: PaletteProps) {
   const [step, setStep] = useState<Step>({ kind: 'IDLE' })
   // The clerk's suggestion, computed fresh at click time so it always reflects
   // the current state rather than a stale render (D-hint).
@@ -90,6 +103,19 @@ export function Palette({ state, report, scenario, mode, disabled, onAction }: P
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [step.kind, cancel])
+
+  // A tap on a floor chip lands here: jump straight to the step that still
+  // needs a decision, with the target already chosen. Keyed on the object
+  // identity rather than its contents, so tapping the same chip twice (after a
+  // "← Back", say) opens the picker again rather than doing nothing.
+  useEffect(() => {
+    if (!focus) return
+    setStep(
+      focus.kind === 'RULE'
+        ? { kind: 'RULE_RULING', target: focus.target }
+        : { kind: 'ANSWER_CHOICE', target: focus.target },
+    )
+  }, [focus])
 
   const emit = (action: Action) => {
     setStep({ kind: 'IDLE' })

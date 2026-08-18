@@ -35,6 +35,12 @@ somebody looks up, confused, and the member who knows the rulebook files a
 point of order about it. **Learn mode** is the other setting: it shows only
 the moves that are in order right now, each with the reason it's in order.
 
+Above the palette sit two things that tell you where you are without telling
+you what to do: **the floor** — one line of plain English for what is happening
+right now — and a strip of chips for everyone visibly waiting on you, a raised
+hand, a point of order or a question apiece, oldest first, each one tappable as
+a shortcut to dealing with that person.
+
 Stuck either way? The **Hint** button asks the clerk what to do next — one
 suggestion, one line of reasoning, no turn spent — and it's there in both
 modes.

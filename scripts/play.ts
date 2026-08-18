@@ -23,6 +23,7 @@
 import * as readline from 'node:readline/promises'
 import {
   buildReportCard,
+  describeSituation,
   initMeeting,
   legalActions,
   reduce,
@@ -104,6 +105,10 @@ function stackSummary(state: MeetingState): string {
 function printSummary(state: MeetingState, scenario: Scenario): void {
   out()
   out(`${meterBar('CTRL', state.meters.control)} ${meterBar('TRUST', state.meters.trust)}`)
+  // Plain English first, engine shorthand underneath: the same split the web
+  // UI makes between the situation line and the state panel. The terse phase
+  // line stays — piped scripts and the README transcript read it.
+  out(`THE FLOOR: ${describeSituation(state, scenario)}`)
   const item = scenario.agenda[state.currentItem]
   const itemLabel = item ? `Item ${state.currentItem + 1}/${scenario.agenda.length}: ${item.title}` : 'no item'
   const floor = state.floorHolder ? memberName(state, state.floorHolder) : 'none'
